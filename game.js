@@ -1061,100 +1061,110 @@ function drawPlayerShip(x, y, w, h) {
   const cx = x + w / 2;
   ctx.save();
 
-  // soulfire engine trail
+  // crimson soulfire engine trail
   const flicker = 8 + Math.random() * 5;
   const flameGrad = ctx.createRadialGradient(cx, y + h, 1, cx, y + h + flicker, flicker);
-  flameGrad.addColorStop(0, "rgba(185,166,255,0.9)");
-  flameGrad.addColorStop(1, "rgba(185,166,255,0)");
+  flameGrad.addColorStop(0, "rgba(220,30,50,0.9)");
+  flameGrad.addColorStop(1, "rgba(220,30,50,0)");
   ctx.fillStyle = flameGrad;
   ctx.beginPath();
   ctx.arc(cx, y + h, flicker, 0, Math.PI * 2);
   ctx.fill();
 
-  // ribbed bone tail
-  ctx.fillStyle = "#3a2960";
+  // tapered chrome tail
+  ctx.fillStyle = "#7a8291";
   ctx.beginPath();
-  ctx.moveTo(cx - 2, y + h * 0.58);
-  ctx.lineTo(cx + 2, y + h * 0.58);
-  ctx.lineTo(cx + 1.4, y + h * 0.88);
+  ctx.moveTo(cx - 2, y + h * 0.6);
+  ctx.lineTo(cx + 2, y + h * 0.6);
+  ctx.lineTo(cx + 1.2, y + h * 0.88);
   ctx.lineTo(cx, y + h);
-  ctx.lineTo(cx - 1.4, y + h * 0.88);
+  ctx.lineTo(cx - 1.2, y + h * 0.88);
   ctx.closePath();
   ctx.fill();
 
-  // jagged bat-membrane wings with clawed tips
-  ctx.fillStyle = "#4a3576";
+  // sweeping vampire cape wings, blood-red interior
+  ctx.fillStyle = "#450a14";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
     ctx.moveTo(cx, y + h * 0.28);
-    ctx.lineTo(cx + side * w * 0.56, y + h * 0.42);
-    ctx.lineTo(cx + side * w * 0.46, y + h * 0.56);
-    ctx.lineTo(cx + side * w * 0.52, y + h * 0.64);
-    ctx.lineTo(cx + side * w * 0.3, y + h * 0.78);
-    ctx.lineTo(cx + side * 2, y + h * 0.5);
+    ctx.quadraticCurveTo(cx + side * w * 0.55, y + h * 0.18, cx + side * w * 0.6, y + h * 0.58);
+    ctx.quadraticCurveTo(cx + side * w * 0.4, y + h * 0.72, cx + side * w * 0.2, y + h * 0.52);
+    ctx.quadraticCurveTo(cx + side * w * 0.08, y + h * 0.36, cx, y + h * 0.28);
     ctx.closePath();
     ctx.fill();
   });
 
-  // membrane veins
-  ctx.strokeStyle = "rgba(185,166,255,0.3)";
+  // chrome trim along the cape's leading edge
+  ctx.strokeStyle = "#dfe6ee";
   ctx.lineWidth = 1;
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.moveTo(cx, y + h * 0.3);
-    ctx.lineTo(cx + side * w * 0.44, y + h * 0.48);
+    ctx.moveTo(cx, y + h * 0.28);
+    ctx.quadraticCurveTo(cx + side * w * 0.55, y + h * 0.18, cx + side * w * 0.6, y + h * 0.58);
     ctx.stroke();
   });
 
-  // clawed wingtip glow
-  ctx.fillStyle = "#b9a6ff";
+  // high popped collar, polished chrome
+  ctx.fillStyle = "#b7c0cc";
   ctx.beginPath();
-  ctx.arc(cx - w * 0.52, y + h * 0.64, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + w * 0.52, y + h * 0.64, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // bone skull head
-  ctx.fillStyle = "#ded2c3";
-  ctx.beginPath();
-  ctx.moveTo(cx, y);
-  ctx.quadraticCurveTo(cx + 5.5, y + h * 0.16, cx + 3.6, y + h * 0.34);
-  ctx.lineTo(cx, y + h * 0.4);
-  ctx.lineTo(cx - 3.6, y + h * 0.34);
-  ctx.quadraticCurveTo(cx - 5.5, y + h * 0.16, cx, y);
-  ctx.closePath();
-  ctx.fill();
-
-  // curved horns
-  ctx.fillStyle = "#ded2c3";
-  ctx.beginPath();
-  ctx.moveTo(cx - 2.6, y + h * 0.06);
-  ctx.quadraticCurveTo(cx - 6.5, y - h * 0.05, cx - 4.5, y + h * 0.14);
-  ctx.lineTo(cx - 1.6, y + h * 0.14);
+  ctx.moveTo(cx, y + h * 0.3);
+  ctx.lineTo(cx - w * 0.22, y - h * 0.02);
+  ctx.lineTo(cx - w * 0.07, y + h * 0.3);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(cx + 2.6, y + h * 0.06);
-  ctx.quadraticCurveTo(cx + 6.5, y - h * 0.05, cx + 4.5, y + h * 0.14);
-  ctx.lineTo(cx + 1.6, y + h * 0.14);
+  ctx.moveTo(cx, y + h * 0.3);
+  ctx.lineTo(cx + w * 0.22, y - h * 0.02);
+  ctx.lineTo(cx + w * 0.07, y + h * 0.3);
   ctx.closePath();
   ctx.fill();
 
-  // glowing eye sockets
-  ctx.fillStyle = "#170c29";
+  // chrome head, metallic gradient
+  const headGrad = ctx.createLinearGradient(cx - 5, y, cx + 5, y + h * 0.3);
+  headGrad.addColorStop(0, "#f5f8fb");
+  headGrad.addColorStop(0.5, "#9aa5b2");
+  headGrad.addColorStop(1, "#4d5563");
+  ctx.fillStyle = headGrad;
   ctx.beginPath();
-  ctx.arc(cx - 1.8, y + h * 0.22, 1.1, 0, Math.PI * 2);
+  ctx.moveTo(cx, y + h * 0.04);
+  ctx.lineTo(cx + 4.2, y + h * 0.2);
+  ctx.lineTo(cx, y + h * 0.32);
+  ctx.lineTo(cx - 4.2, y + h * 0.2);
+  ctx.closePath();
+  ctx.fill();
+
+  // glowing crimson eyes
+  ctx.fillStyle = "#ff1c38";
+  ctx.beginPath();
+  ctx.arc(cx - 1.6, y + h * 0.18, 0.9, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + 1.8, y + h * 0.22, 1.1, 0, Math.PI * 2);
+  ctx.arc(cx + 1.6, y + h * 0.18, 0.9, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#b9a6ff";
+
+  // fangs
+  ctx.fillStyle = "#f5f8fb";
   ctx.beginPath();
-  ctx.arc(cx - 1.8, y + h * 0.22, 0.55, 0, Math.PI * 2);
+  ctx.moveTo(cx - 1, y + h * 0.26);
+  ctx.lineTo(cx - 0.4, y + h * 0.32);
+  ctx.lineTo(cx - 1.6, y + h * 0.3);
+  ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + 1.8, y + h * 0.22, 0.55, 0, Math.PI * 2);
+  ctx.moveTo(cx + 1, y + h * 0.26);
+  ctx.lineTo(cx + 0.4, y + h * 0.32);
+  ctx.lineTo(cx + 1.6, y + h * 0.3);
+  ctx.closePath();
+  ctx.fill();
+
+  // royal ruby brooch at the throat
+  ctx.fillStyle = "#ff1c3877";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.38, 2, 2.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ff1c38";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.38, 1, 1.2, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
