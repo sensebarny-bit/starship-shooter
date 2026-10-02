@@ -21,7 +21,7 @@ const ENEMY_MAX_Y = HEIGHT / 2;
 // then upscaled with nearest-neighbor filtering onto the real canvas — this is
 // what gives every sprite its chunky "3D pixel" voxel look for free, with no
 // changes needed to the individual draw*() functions below.
-const PIXEL_SCALE = 4;
+const PIXEL_SCALE = 2;
 const pixelCanvas = document.createElement("canvas");
 pixelCanvas.width = WIDTH / PIXEL_SCALE;
 pixelCanvas.height = HEIGHT / PIXEL_SCALE;
@@ -1046,7 +1046,7 @@ function drawPlayerShip(x, y, w, h) {
   const cx = x + w / 2;
   ctx.save();
 
-  // soulfire engine flame
+  // soulfire engine trail
   const flicker = 8 + Math.random() * 5;
   const flameGrad = ctx.createRadialGradient(cx, y + h, 1, cx, y + h + flicker, flicker);
   flameGrad.addColorStop(0, "rgba(185,166,255,0.9)");
@@ -1056,44 +1056,90 @@ function drawPlayerShip(x, y, w, h) {
   ctx.arc(cx, y + h, flicker, 0, Math.PI * 2);
   ctx.fill();
 
-  // swept wings
+  // ribbed bone tail
+  ctx.fillStyle = "#3a2960";
+  ctx.beginPath();
+  ctx.moveTo(cx - 2, y + h * 0.58);
+  ctx.lineTo(cx + 2, y + h * 0.58);
+  ctx.lineTo(cx + 1.4, y + h * 0.88);
+  ctx.lineTo(cx, y + h);
+  ctx.lineTo(cx - 1.4, y + h * 0.88);
+  ctx.closePath();
+  ctx.fill();
+
+  // jagged bat-membrane wings with clawed tips
   ctx.fillStyle = "#4a3576";
-  ctx.beginPath();
-  ctx.moveTo(x, y + h * 0.95);
-  ctx.lineTo(cx - 3, y + h * 0.35);
-  ctx.lineTo(cx, y + h * 0.65);
-  ctx.closePath();
-  ctx.fill();
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.moveTo(cx, y + h * 0.28);
+    ctx.lineTo(cx + side * w * 0.56, y + h * 0.42);
+    ctx.lineTo(cx + side * w * 0.46, y + h * 0.56);
+    ctx.lineTo(cx + side * w * 0.52, y + h * 0.64);
+    ctx.lineTo(cx + side * w * 0.3, y + h * 0.78);
+    ctx.lineTo(cx + side * 2, y + h * 0.5);
+    ctx.closePath();
+    ctx.fill();
+  });
 
-  ctx.beginPath();
-  ctx.moveTo(x + w, y + h * 0.95);
-  ctx.lineTo(cx + 3, y + h * 0.35);
-  ctx.lineTo(cx, y + h * 0.65);
-  ctx.closePath();
-  ctx.fill();
+  // membrane veins
+  ctx.strokeStyle = "rgba(185,166,255,0.3)";
+  ctx.lineWidth = 1;
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.moveTo(cx, y + h * 0.3);
+    ctx.lineTo(cx + side * w * 0.44, y + h * 0.48);
+    ctx.stroke();
+  });
 
-  // wingtip glow
+  // clawed wingtip glow
   ctx.fillStyle = "#b9a6ff";
   ctx.beginPath();
-  ctx.arc(x + 1, y + h * 0.95, 2, 0, Math.PI * 2);
+  ctx.arc(cx - w * 0.52, y + h * 0.64, 1.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x + w - 1, y + h * 0.95, 2, 0, Math.PI * 2);
+  ctx.arc(cx + w * 0.52, y + h * 0.64, 1.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // bone-plated fuselage / nose cone
+  // bone skull head
   ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
   ctx.moveTo(cx, y);
-  ctx.lineTo(cx + 5, y + h * 0.7);
-  ctx.lineTo(cx - 5, y + h * 0.7);
+  ctx.quadraticCurveTo(cx + 5.5, y + h * 0.16, cx + 3.6, y + h * 0.34);
+  ctx.lineTo(cx, y + h * 0.4);
+  ctx.lineTo(cx - 3.6, y + h * 0.34);
+  ctx.quadraticCurveTo(cx - 5.5, y + h * 0.16, cx, y);
   ctx.closePath();
   ctx.fill();
 
-  // cockpit glass
+  // curved horns
+  ctx.fillStyle = "#ded2c3";
+  ctx.beginPath();
+  ctx.moveTo(cx - 2.6, y + h * 0.06);
+  ctx.quadraticCurveTo(cx - 6.5, y - h * 0.05, cx - 4.5, y + h * 0.14);
+  ctx.lineTo(cx - 1.6, y + h * 0.14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + 2.6, y + h * 0.06);
+  ctx.quadraticCurveTo(cx + 6.5, y - h * 0.05, cx + 4.5, y + h * 0.14);
+  ctx.lineTo(cx + 1.6, y + h * 0.14);
+  ctx.closePath();
+  ctx.fill();
+
+  // glowing eye sockets
   ctx.fillStyle = "#170c29";
   ctx.beginPath();
-  ctx.ellipse(cx, y + h * 0.32, 2.4, 3.4, 0, 0, Math.PI * 2);
+  ctx.arc(cx - 1.8, y + h * 0.22, 1.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + 1.8, y + h * 0.22, 1.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#b9a6ff";
+  ctx.beginPath();
+  ctx.arc(cx - 1.8, y + h * 0.22, 0.55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + 1.8, y + h * 0.22, 0.55, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -1141,19 +1187,38 @@ function drawPhoenixShip(x, y, w, h) {
     );
     ctx.closePath();
     ctx.fill();
+
+    // taloned wingtip
+    ctx.fillStyle = "#7a1f0a";
+    ctx.beginPath();
+    ctx.moveTo(cx + side * w * 1.6, y + h * 0.75);
+    ctx.lineTo(cx + side * w * 1.7, y + h * 0.82);
+    ctx.lineTo(cx + side * w * 1.5, y + h * 0.78);
+    ctx.closePath();
+    ctx.fill();
   });
 
-  // fiery hull
+  // fiery body
   ctx.fillStyle = "#ff7a3c";
   ctx.beginPath();
-  ctx.moveTo(cx, y);
+  ctx.moveTo(cx, y + h * 0.08);
   ctx.lineTo(cx + 6, y + h * 0.75);
   ctx.lineTo(cx, y + h * 0.6);
   ctx.lineTo(cx - 6, y + h * 0.75);
   ctx.closePath();
   ctx.fill();
 
-  // white-hot core
+  // hooked beak head
+  ctx.fillStyle = "#ffcf5c";
+  ctx.beginPath();
+  ctx.moveTo(cx, y);
+  ctx.lineTo(cx + 3, y + h * 0.22);
+  ctx.lineTo(cx, y + h * 0.3);
+  ctx.lineTo(cx - 3, y + h * 0.22);
+  ctx.closePath();
+  ctx.fill();
+
+  // white-hot core / eye
   ctx.fillStyle = "#fff4cc";
   ctx.beginPath();
   ctx.ellipse(cx, y + h * 0.35, 3, 4, 0, 0, Math.PI * 2);
@@ -1177,44 +1242,50 @@ function drawEvilStarship(x, y, w, h) {
   ctx.arc(cx, y, flicker * 0.45, 0, Math.PI * 2);
   ctx.fill();
 
-  // jagged swept-back wings
+  // scalloped bat-membrane wings
+  ctx.fillStyle = "#2a0f1a";
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.moveTo(cx, y + h * 0.3);
+    ctx.lineTo(cx + side * w * 0.55, y + h * 0.1);
+    ctx.quadraticCurveTo(cx + side * w * 0.5, y + h * 0.4, cx + side * w * 0.32, y + h * 0.42);
+    ctx.quadraticCurveTo(cx + side * w * 0.42, y + h * 0.55, cx + side * w * 0.2, y + h * 0.6);
+    ctx.lineTo(cx, y + h * 0.4);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // tiny horn spikes
   ctx.fillStyle = "#2a0f1a";
   ctx.beginPath();
-  ctx.moveTo(x, y + h * 0.08);
-  ctx.lineTo(cx - 3, y + h * 0.62);
-  ctx.lineTo(cx, y + h * 0.38);
+  ctx.moveTo(cx - 2, y + h * 0.2);
+  ctx.lineTo(cx - 3.4, y);
+  ctx.lineTo(cx - 1, y + h * 0.18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + 2, y + h * 0.2);
+  ctx.lineTo(cx + 3.4, y);
+  ctx.lineTo(cx + 1, y + h * 0.18);
   ctx.closePath();
   ctx.fill();
 
-  ctx.beginPath();
-  ctx.moveTo(x + w, y + h * 0.08);
-  ctx.lineTo(cx + 3, y + h * 0.62);
-  ctx.lineTo(cx, y + h * 0.38);
-  ctx.closePath();
-  ctx.fill();
-
-  // menacing red wingtip lights
-  ctx.fillStyle = "#ff2d4d";
-  ctx.beginPath();
-  ctx.arc(x + 1, y + h * 0.08, 2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(x + w - 1, y + h * 0.08, 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // dark hull, nose pointed down toward the player
+  // imp head, chin pointed down toward the player
   ctx.fillStyle = "#17141f";
   ctx.beginPath();
   ctx.moveTo(cx, y + h);
-  ctx.lineTo(cx + 5, y + h * 0.32);
-  ctx.lineTo(cx - 5, y + h * 0.32);
+  ctx.lineTo(cx + 4.5, y + h * 0.5);
+  ctx.lineTo(cx - 4.5, y + h * 0.5);
   ctx.closePath();
   ctx.fill();
 
-  // glowing red cockpit eye
+  // twin glowing eyes
   ctx.fillStyle = "#ff2d4d";
   ctx.beginPath();
-  ctx.ellipse(cx, y + h * 0.62, 2.6, 3.6, 0, 0, Math.PI * 2);
+  ctx.arc(cx - 1.8, y + h * 0.62, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + 1.8, y + h * 0.62, 1.6, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -1236,32 +1307,66 @@ function drawCruiser(x, y, w, h) {
     ctx.fill();
   });
 
-  // boxy armored hull
-  ctx.fillStyle = "#23202b";
+  // tattered banner streamers
+  ctx.fillStyle = "#4a1420";
+  [x + w * 0.15, x + w * 0.85].forEach((bx) => {
+    ctx.beginPath();
+    ctx.moveTo(bx, y + h * 0.1);
+    ctx.lineTo(bx, y + h * 0.5);
+    ctx.lineTo(bx - 3, y + h * 0.42);
+    ctx.lineTo(bx, y + h * 0.34);
+    ctx.lineTo(bx - 3, y + h * 0.26);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // ribbed bone hull
+  ctx.fillStyle = "#2b2733";
   ctx.beginPath();
-  ctx.moveTo(x + w * 0.1, y + h * 0.1);
-  ctx.lineTo(x + w * 0.9, y + h * 0.1);
+  ctx.moveTo(x + w * 0.1, y + h * 0.15);
+  ctx.lineTo(x + w * 0.9, y + h * 0.15);
   ctx.lineTo(x + w * 0.78, y + h * 0.85);
   ctx.lineTo(x + w * 0.22, y + h * 0.85);
   ctx.closePath();
   ctx.fill();
 
-  // hull plating line
-  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  // rib struts
+  ctx.strokeStyle = "rgba(222,210,195,0.25)";
   ctx.lineWidth = 1;
+  [0.32, 0.48, 0.64].forEach((t) => {
+    ctx.beginPath();
+    ctx.moveTo(x + w * (0.28 + t * 0.06), y + h * t);
+    ctx.lineTo(x + w * (0.72 - t * 0.06), y + h * t);
+    ctx.stroke();
+  });
+
+  // skull emblem
+  ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
-  ctx.moveTo(x + w * 0.18, y + h * 0.45);
-  ctx.lineTo(x + w * 0.82, y + h * 0.45);
-  ctx.stroke();
+  ctx.arc(x + w * 0.5, y + h * 0.4, w * 0.09, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#17141f";
+  ctx.beginPath();
+  ctx.arc(x + w * 0.47, y + h * 0.39, 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + w * 0.53, y + h * 0.39, 1, 0, Math.PI * 2);
+  ctx.fill();
 
   // red sensor stripe
   ctx.fillStyle = "#ff2d4d";
-  ctx.fillRect(x + w * 0.4, y + h * 0.3, w * 0.2, h * 0.18);
+  ctx.fillRect(x + w * 0.4, y + h * 0.58, w * 0.2, h * 0.08);
 
-  // gun barrels
+  // spiked tusk cannons
   ctx.fillStyle = "#17141f";
-  ctx.fillRect(x + w * 0.2, y + h * 0.78, 3, h * 0.32);
-  ctx.fillRect(x + w * 0.77, y + h * 0.78, 3, h * 0.32);
+  [0.2, 0.77].forEach((t) => {
+    ctx.beginPath();
+    ctx.moveTo(x + w * t, y + h * 0.78);
+    ctx.lineTo(x + w * t + 3, y + h * 0.78);
+    ctx.lineTo(x + w * t + 1.5, y + h * 1.1);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   ctx.restore();
 }
@@ -1282,24 +1387,54 @@ function drawStalker(x, y, w, h) {
   ctx.arc(cx, y, flicker * 0.45, 0, Math.PI * 2);
   ctx.fill();
 
-  // diamond hull
+  // trailing wisp tendrils
+  ctx.strokeStyle = "rgba(36,18,51,0.8)";
+  ctx.lineWidth = 2;
+  [-1, 0, 1].forEach((side) => {
+    const sway = Math.sin(Date.now() / 300 + side) * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + side * 4, y + h * 0.7);
+    ctx.quadraticCurveTo(cx + side * 6 + sway, y + h * 0.9, cx + side * 3, y + h);
+    ctx.stroke();
+  });
+
+  // tattered cloak / diamond hull
   ctx.fillStyle = "#241233";
   ctx.beginPath();
   ctx.moveTo(cx, y);
   ctx.lineTo(x + w, cy);
-  ctx.lineTo(cx, y + h);
+  ctx.lineTo(cx, y + h * 0.78);
   ctx.lineTo(x, cy);
   ctx.closePath();
   ctx.fill();
 
-  // glowing tracking eye (cheap layered glow instead of shadowBlur)
+  // eyelid spikes
+  ctx.fillStyle = "#241233";
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cx + i * 3, cy - 6);
+    ctx.lineTo(cx + i * 3 + 1, cy - 9);
+    ctx.lineTo(cx + i * 3 + 2, cy - 6);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // glowing tracking eye — layered sclera / iris / pupil
   ctx.fillStyle = "rgba(176,107,255,0.35)";
   ctx.beginPath();
   ctx.arc(cx, cy, 6, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = "#ded2c3";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fill();
   ctx.fillStyle = "#b06bff";
   ctx.beginPath();
-  ctx.arc(cx, cy, 3.4, 0, Math.PI * 2);
+  ctx.arc(cx, cy, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#17141f";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 1, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
