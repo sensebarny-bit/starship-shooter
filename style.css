@@ -9,9 +9,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, #0b0e2a 0%, #000000 100%);
+  background: radial-gradient(ellipse at center, #1c0f2b 0%, #050308 100%);
   font-family: "Courier New", monospace;
-  color: #e8f1ff;
+  color: #ded2c3;
   position: relative;
   overflow: hidden;
 }
@@ -29,13 +29,13 @@ body {
   padding: 0 8px;
   font-size: 12px;
   letter-spacing: 1px;
-  color: #7fffd4;
-  text-shadow: 0 0 6px rgba(127, 255, 212, 0.6);
+  color: #b9a6ff;
+  text-shadow: 0 0 6px rgba(185, 166, 255, 0.6);
   z-index: 2;
 }
 
 #laserCount {
-  color: #7fffd4;
+  color: #b9a6ff;
 }
 
 #rocketCount {
@@ -54,9 +54,12 @@ body {
 }
 
 canvas {
-  background: #000814;
-  border: 2px solid #3a6ea5;
-  box-shadow: 0 0 24px rgba(58, 110, 165, 0.5);
+  background: #0a0510;
+  border: 2px solid #5b3f99;
+  box-shadow: 0 0 24px rgba(91, 63, 153, 0.5);
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
   display: block;
   width: 100vw;
   height: 100vh;
@@ -90,22 +93,22 @@ html:fullscreen body {
 
 #overlay h1,
 #gameOverOverlay h1 {
-  color: #ff5d73;
-  text-shadow: 0 0 12px rgba(255, 93, 115, 0.8);
+  color: #e23a56;
+  text-shadow: 0 0 12px rgba(226, 58, 86, 0.8);
   letter-spacing: 4px;
   margin: 0;
 }
 
 #overlay p,
 #gameOverOverlay p {
-  color: #b8c7e0;
+  color: #c9bcd6;
   margin: 0;
 }
 
 button {
-  background: #1b2a4a;
-  color: #7fffd4;
-  border: 2px solid #7fffd4;
+  background: #241233;
+  color: #b9a6ff;
+  border: 2px solid #b9a6ff;
   padding: 10px 24px;
   font-family: inherit;
   font-size: 16px;
@@ -115,7 +118,7 @@ button {
 }
 
 button:hover {
-  background: #2a3f6b;
+  background: #3a2152;
   transform: scale(1.05);
 }
 

@@ -1,5 +1,5 @@
 const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const displayCtx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const livesEl = document.getElementById("lives");
 const waveEl = document.getElementById("wave");
@@ -17,11 +17,24 @@ const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
 const ENEMY_MAX_Y = HEIGHT / 2;
 
+// All game rendering draws onto a small offscreen buffer (via `ctx`), which is
+// then upscaled with nearest-neighbor filtering onto the real canvas — this is
+// what gives every sprite its chunky "3D pixel" voxel look for free, with no
+// changes needed to the individual draw*() functions below.
+const PIXEL_SCALE = 4;
+const pixelCanvas = document.createElement("canvas");
+pixelCanvas.width = WIDTH / PIXEL_SCALE;
+pixelCanvas.height = HEIGHT / PIXEL_SCALE;
+const ctx = pixelCanvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+ctx.scale(1 / PIXEL_SCALE, 1 / PIXEL_SCALE);
+
 function fitCanvasResolution() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = WIDTH * dpr;
   canvas.height = HEIGHT * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  displayCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  displayCtx.imageSmoothingEnabled = false;
 }
 fitCanvasResolution();
 window.addEventListener("resize", fitCanvasResolution);
@@ -1019,7 +1032,7 @@ function update() {
     deathTimer = 60;
     spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, "#ff5d73");
     spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, "#ffcf5c");
-    spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, "#e8f1ff");
+    spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, "#ded2c3");
   }
 }
 
@@ -1033,18 +1046,18 @@ function drawPlayerShip(x, y, w, h) {
   const cx = x + w / 2;
   ctx.save();
 
-  // engine flame
+  // soulfire engine flame
   const flicker = 8 + Math.random() * 5;
   const flameGrad = ctx.createRadialGradient(cx, y + h, 1, cx, y + h + flicker, flicker);
-  flameGrad.addColorStop(0, "rgba(127,255,212,0.9)");
-  flameGrad.addColorStop(1, "rgba(127,255,212,0)");
+  flameGrad.addColorStop(0, "rgba(185,166,255,0.9)");
+  flameGrad.addColorStop(1, "rgba(185,166,255,0)");
   ctx.fillStyle = flameGrad;
   ctx.beginPath();
   ctx.arc(cx, y + h, flicker, 0, Math.PI * 2);
   ctx.fill();
 
   // swept wings
-  ctx.fillStyle = "#3ab8a6";
+  ctx.fillStyle = "#4a3576";
   ctx.beginPath();
   ctx.moveTo(x, y + h * 0.95);
   ctx.lineTo(cx - 3, y + h * 0.35);
@@ -1060,7 +1073,7 @@ function drawPlayerShip(x, y, w, h) {
   ctx.fill();
 
   // wingtip glow
-  ctx.fillStyle = "#7fffd4";
+  ctx.fillStyle = "#b9a6ff";
   ctx.beginPath();
   ctx.arc(x + 1, y + h * 0.95, 2, 0, Math.PI * 2);
   ctx.fill();
@@ -1068,8 +1081,8 @@ function drawPlayerShip(x, y, w, h) {
   ctx.arc(x + w - 1, y + h * 0.95, 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // fuselage / nose cone
-  ctx.fillStyle = "#e8fffb";
+  // bone-plated fuselage / nose cone
+  ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
   ctx.moveTo(cx, y);
   ctx.lineTo(cx + 5, y + h * 0.7);
@@ -1078,7 +1091,7 @@ function drawPlayerShip(x, y, w, h) {
   ctx.fill();
 
   // cockpit glass
-  ctx.fillStyle = "#133a5e";
+  ctx.fillStyle = "#170c29";
   ctx.beginPath();
   ctx.ellipse(cx, y + h * 0.32, 2.4, 3.4, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -1422,7 +1435,7 @@ function drawBossHealthBar(b, label, barColor) {
   const barW = 180;
   const barX = WIDTH / 2 - barW / 2;
   ctx.save();
-  ctx.fillStyle = "#e8f1ff";
+  ctx.fillStyle = "#ded2c3";
   ctx.font = "bold 10px monospace";
   ctx.textAlign = "center";
   ctx.fillText(label, WIDTH / 2, 10);
@@ -1430,7 +1443,7 @@ function drawBossHealthBar(b, label, barColor) {
   ctx.fillRect(barX, 14, barW, 8);
   ctx.fillStyle = barColor;
   ctx.fillRect(barX, 14, barW * Math.max(b.hp / b.maxHp, 0), 8);
-  ctx.strokeStyle = "#e8f1ff";
+  ctx.strokeStyle = "#ded2c3";
   ctx.lineWidth = 1;
   ctx.strokeRect(barX, 14, barW, 8);
   ctx.restore();
@@ -1495,7 +1508,7 @@ function drawGhostPirateBoss(b) {
   ctx.lineTo(cx, b.y - b.h * 0.2);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#e8f1ff";
+  ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
   ctx.arc(cx + b.w * 0.09, b.y - b.h * 0.26, 3, 0, Math.PI * 2);
   ctx.fill();
@@ -1536,7 +1549,7 @@ function drawGhostPirateBoss(b) {
 }
 
 const PICKUP_STYLE = {
-  laser: { color: "#7fffd4", glow: "rgba(127,255,212,0.55)" },
+  laser: { color: "#b9a6ff", glow: "rgba(185,166,255,0.55)" },
   rocket: { color: "#ffb347", glow: "rgba(255,179,71,0.55)" },
   life: { color: "#ff5d73", glow: "rgba(255,93,115,0.55)" },
   shield: { color: "#5cc8ff", glow: "rgba(92,200,255,0.55)" },
@@ -1652,7 +1665,7 @@ function drawPickup(p) {
 function draw() {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "#cfc2e8";
   stars.forEach((s) => {
     ctx.globalAlpha = 0.5 + s.r / 3;
     ctx.beginPath();
@@ -1680,7 +1693,7 @@ function draw() {
     }
   }
 
-  ctx.strokeStyle = "#7fffd4";
+  ctx.strokeStyle = "#b9a6ff";
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
   bullets.forEach((b) => {
@@ -1771,9 +1784,9 @@ function draw() {
     ctx.save();
     ctx.globalAlpha = Math.min(1, laserBeam.timer / 24) * 0.8 + 0.2;
     const grad = ctx.createLinearGradient(laserBeam.x, 0, laserBeam.x + laserBeam.width, 0);
-    grad.addColorStop(0, "rgba(127,255,212,0)");
-    grad.addColorStop(0.5, "rgba(127,255,212,0.95)");
-    grad.addColorStop(1, "rgba(127,255,212,0)");
+    grad.addColorStop(0, "rgba(185,166,255,0)");
+    grad.addColorStop(0.5, "rgba(185,166,255,0.95)");
+    grad.addColorStop(1, "rgba(185,166,255,0)");
     ctx.fillStyle = grad;
     ctx.fillRect(laserBeam.x, 0, laserBeam.width, player.y + player.h / 2);
     ctx.restore();
@@ -1836,11 +1849,24 @@ function draw() {
   if (paused) {
     ctx.fillStyle = "rgba(0,0,0,0.5)";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    ctx.fillStyle = "#e8f1ff";
+    ctx.fillStyle = "#ded2c3";
     ctx.font = "24px monospace";
     ctx.textAlign = "center";
     ctx.fillText("PAUSED", WIDTH / 2, HEIGHT / 2);
   }
+
+  displayCtx.clearRect(0, 0, WIDTH, HEIGHT);
+  displayCtx.drawImage(
+    pixelCanvas,
+    0,
+    0,
+    pixelCanvas.width,
+    pixelCanvas.height,
+    0,
+    0,
+    WIDTH,
+    HEIGHT
+  );
 }
 
 const SPEED_MULTIPLIER = 1.2;
