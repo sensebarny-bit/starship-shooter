@@ -101,6 +101,8 @@ const player = {
   gateState: "idle",
   gateStateTimer: 0,
   gateTimer: 0,
+  gateX: 0,
+  gateY: 0,
 };
 
 let bullets = [];
@@ -399,6 +401,8 @@ function resetGame() {
   player.gateState = "idle";
   player.gateStateTimer = 0;
   player.gateTimer = 0;
+  player.gateX = 0;
+  player.gateY = 0;
   bullets = [];
   enemyBullets = [];
   particles = [];
@@ -537,7 +541,9 @@ const GATE_WIDTH = WIDTH * 0.42;
 function activateGateBeam() {
   player.gateState = "charging";
   player.gateStateTimer = GATE_CHARGE_TICKS;
-  spawnExplosion(player.x + player.w / 2, player.y, "#ff1c38");
+  player.gateX = player.x + player.w / 2;
+  player.gateY = player.y + player.h / 2;
+  spawnExplosion(player.gateX, player.y, "#ff1c38");
 }
 
 function activatePhoenix() {
@@ -587,7 +593,7 @@ function explodeRocket(x, y) {
       e.alive = false;
       state.score += 10;
       addPhoenixProgress(1);
-      spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#ffcf5c");
+      spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#a30f27");
       if (Math.random() < 0.14) spawnPickup(e.x + e.w / 2, e.y + e.h / 2);
     }
   });
@@ -599,16 +605,17 @@ function explodeRocket(x, y) {
       boss.hitFlash = 8;
     }
   }
-  for (let i = 0; i < 24; i++) {
+  const bloodShades = ["#3a040d", "#6b0a1c", "#a30f27", "#d4132f", "#ff1c38"];
+  for (let i = 0; i < 28; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = Math.random() * 4 + 1;
     particles.push({
       x,
       y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
+      vy: Math.sin(angle) * speed + 1,
       life: 35 + Math.random() * 10,
-      color: "#ffb347",
+      color: bloodShades[Math.floor(Math.random() * bloodShades.length)],
     });
   }
 }
@@ -1062,8 +1069,8 @@ function update() {
     }
   } else if (player.gateState === "firing") {
     player.gateStateTimer--;
-    const gx0 = player.x + player.w / 2 - GATE_WIDTH / 2;
-    const gx1 = player.x + player.w / 2 + GATE_WIDTH / 2;
+    const gx0 = player.gateX - GATE_WIDTH / 2;
+    const gx1 = player.gateX + GATE_WIDTH / 2;
     enemies.forEach((e) => {
       if (e.alive && e.x < gx1 && e.x + e.w > gx0) {
         e.hp -= 1;
@@ -2191,8 +2198,8 @@ function draw() {
 
   if (player.gateState === "charging") {
     const progress = 1 - player.gateStateTimer / GATE_CHARGE_TICKS;
-    const gcx = player.x + player.w / 2;
-    const gcy = player.y - 6;
+    const gcx = player.gateX;
+    const gcy = player.gateY - player.h / 2 - 6;
     const ringR = 4 + progress * (GATE_WIDTH / 2 - 4);
     ctx.save();
     ctx.globalAlpha = 0.5 + progress * 0.5;
@@ -2210,9 +2217,9 @@ function draw() {
   }
 
   if (player.gateState === "firing") {
-    const gcx = player.x + player.w / 2;
+    const gcx = player.gateX;
     const gx0 = gcx - GATE_WIDTH / 2;
-    const beamHeight = player.y + player.h / 2;
+    const beamHeight = player.gateY;
     const t = Date.now();
     const bloodShades = ["#3a040d", "#6b0a1c", "#a30f27", "#d4132f", "#ff1c38"];
 
