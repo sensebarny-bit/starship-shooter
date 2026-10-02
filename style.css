@@ -1,0 +1,124 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #0b0e2a 0%, #000000 100%);
+  font-family: "Courier New", monospace;
+  color: #e8f1ff;
+  position: relative;
+  overflow: hidden;
+}
+
+#hud {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  row-gap: 4px;
+  padding: 0 8px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #7fffd4;
+  text-shadow: 0 0 6px rgba(127, 255, 212, 0.6);
+  z-index: 2;
+}
+
+#laserCount {
+  color: #7fffd4;
+}
+
+#rocketCount {
+  color: #ffb347;
+  text-shadow: 0 0 6px rgba(255, 179, 71, 0.6);
+}
+
+#phoenixCount {
+  color: #ff5a1f;
+  text-shadow: 0 0 6px rgba(255, 90, 31, 0.6);
+}
+
+#empCount {
+  color: #38bdf8;
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+}
+
+canvas {
+  background: #000814;
+  border: 2px solid #3a6ea5;
+  box-shadow: 0 0 24px rgba(58, 110, 165, 0.5);
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+
+html:fullscreen,
+html:fullscreen body {
+  background: #000000;
+}
+
+#overlay,
+#gameOverOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 3;
+  text-align: center;
+  padding: 24px;
+}
+
+#overlay[hidden],
+#gameOverOverlay[hidden] {
+  display: none;
+}
+
+#overlay h1,
+#gameOverOverlay h1 {
+  color: #ff5d73;
+  text-shadow: 0 0 12px rgba(255, 93, 115, 0.8);
+  letter-spacing: 4px;
+  margin: 0;
+}
+
+#overlay p,
+#gameOverOverlay p {
+  color: #b8c7e0;
+  margin: 0;
+}
+
+button {
+  background: #1b2a4a;
+  color: #7fffd4;
+  border: 2px solid #7fffd4;
+  padding: 10px 24px;
+  font-family: inherit;
+  font-size: 16px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+button:hover {
+  background: #2a3f6b;
+  transform: scale(1.05);
+}
+
+button:active {
+  transform: scale(0.97);
+}
