@@ -21,10 +21,10 @@ const ENEMY_MAX_Y = HEIGHT / 2;
 // then upscaled with nearest-neighbor filtering onto the real canvas — this is
 // what gives every sprite its chunky "3D pixel" voxel look for free, with no
 // changes needed to the individual draw*() functions below.
-const PIXEL_SCALE = 2;
+const PIXEL_SCALE = 1.5;
 const pixelCanvas = document.createElement("canvas");
-pixelCanvas.width = WIDTH / PIXEL_SCALE;
-pixelCanvas.height = HEIGHT / PIXEL_SCALE;
+pixelCanvas.width = Math.round(WIDTH / PIXEL_SCALE);
+pixelCanvas.height = Math.round(HEIGHT / PIXEL_SCALE);
 const ctx = pixelCanvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 ctx.scale(1 / PIXEL_SCALE, 1 / PIXEL_SCALE);
@@ -135,6 +135,7 @@ function initStars() {
       y: Math.random() * HEIGHT,
       r: Math.random() * 1.6 + 0.4,
       speed: Math.random() * 1.5 + 0.3,
+      ember: Math.random() < 0.12,
     });
   }
 }
@@ -1475,6 +1476,15 @@ function drawSkullBoss(b) {
   ctx.closePath();
   ctx.fill();
 
+  // bone cracks
+  ctx.strokeStyle = "rgba(0,0,0,0.25)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.1, cy - b.h * 0.5);
+  ctx.lineTo(cx - b.w * 0.04, cy - b.h * 0.3);
+  ctx.lineTo(cx - b.w * 0.12, cy - b.h * 0.15);
+  ctx.stroke();
+
   // cheekbone shading
   ctx.fillStyle = "rgba(0,0,0,0.08)";
   ctx.beginPath();
@@ -1627,6 +1637,15 @@ function drawGhostPirateBoss(b) {
   ctx.closePath();
   ctx.fill();
 
+  // tattered tears in the hull
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(b.x + b.w * 0.32, b.y + b.h * 0.28, 2.6, 1.6, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(b.x + b.w * 0.68, b.y + b.h * 0.3, 2, 1.3, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
   // mast
   ctx.strokeStyle = hullColor;
   ctx.lineWidth = 2;
@@ -1767,10 +1786,15 @@ function drawPickup(p) {
     ctx.fill();
   } else if (p.type === "wingman") {
     ctx.beginPath();
-    ctx.arc(cx - 2.6, cy, 2.6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(cx + 2.6, cy, 2.6, 0, Math.PI * 2);
+    ctx.moveTo(cx, cy - 1);
+    ctx.lineTo(cx - 5, cy - 4);
+    ctx.lineTo(cx - 2, cy);
+    ctx.lineTo(cx - 5, cy + 3);
+    ctx.lineTo(cx, cy + 1.5);
+    ctx.lineTo(cx + 5, cy + 3);
+    ctx.lineTo(cx + 2, cy);
+    ctx.lineTo(cx + 5, cy - 4);
+    ctx.closePath();
     ctx.fill();
   } else if (p.type === "emp") {
     ctx.strokeStyle = "#ffffff";
@@ -1800,9 +1824,9 @@ function drawPickup(p) {
 function draw() {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
-  ctx.fillStyle = "#cfc2e8";
   stars.forEach((s) => {
     ctx.globalAlpha = 0.5 + s.r / 3;
+    ctx.fillStyle = s.ember ? "#ff8a4c" : "#cfc2e8";
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
     ctx.fill();
@@ -1828,23 +1852,54 @@ function draw() {
     }
   }
 
-  ctx.strokeStyle = "#b9a6ff";
-  ctx.lineWidth = 3;
-  ctx.lineCap = "round";
   bullets.forEach((b) => {
     const mag = Math.hypot(b.vx, b.vy) || 1;
     const ux = b.vx / mag;
     const uy = b.vy / mag;
     const cx = b.x + b.w / 2;
     const cy = b.y + b.h / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.atan2(uy, ux) + Math.PI / 2);
+    ctx.fillStyle = "rgba(185,166,255,0.35)";
     ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx - ux * 10, cy - uy * 10);
-    ctx.stroke();
+    ctx.moveTo(0, -9);
+    ctx.lineTo(3, 2);
+    ctx.lineTo(0, 10);
+    ctx.lineTo(-3, 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#e4d9ff";
+    ctx.beginPath();
+    ctx.moveTo(0, -7);
+    ctx.lineTo(1.4, 1);
+    ctx.lineTo(0, 7);
+    ctx.lineTo(-1.4, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   });
 
-  ctx.fillStyle = "#ff2d4d";
-  enemyBullets.forEach((b) => ctx.fillRect(b.x, b.y, b.w, b.h));
+  enemyBullets.forEach((b) => {
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Date.now() / 300);
+    ctx.fillStyle = "#7a0f1f";
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(4, 0);
+    ctx.lineTo(0, 4);
+    ctx.lineTo(-4, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ff2d4d";
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
 
   enemies.forEach((e) => {
     if (!e.alive) return;
