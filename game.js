@@ -17,6 +17,15 @@ const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
 const ENEMY_MAX_Y = HEIGHT / 2;
 
+function fitCanvasResolution() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = WIDTH * dpr;
+  canvas.height = HEIGHT * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+fitCanvasResolution();
+window.addEventListener("resize", fitCanvasResolution);
+
 const ENEMY_TYPES = {
   scout: { w: 28, h: 24, hpBonus: 0, speedMul: 1, fireMin: 90, fireMax: 150 },
   stalker: {
@@ -602,16 +611,16 @@ function update() {
     return;
   }
 
-  if (keys.has("ArrowLeft") || keys.has("a") || keys.has("A")) {
+  if (keys.has("ArrowLeft") || keys.has("KeyA")) {
     player.x -= player.speed;
   }
-  if (keys.has("ArrowRight") || keys.has("d") || keys.has("D")) {
+  if (keys.has("ArrowRight") || keys.has("KeyD")) {
     player.x += player.speed;
   }
-  if (keys.has("ArrowUp") || keys.has("w") || keys.has("W")) {
+  if (keys.has("ArrowUp") || keys.has("KeyW")) {
     player.y -= player.speed;
   }
-  if (keys.has("ArrowDown") || keys.has("s") || keys.has("S")) {
+  if (keys.has("ArrowDown") || keys.has("KeyS")) {
     player.y += player.speed;
   }
   const edgeMargin = player.phoenixMode ? 50 : 4;
@@ -1834,12 +1843,32 @@ function draw() {
   }
 }
 
-function loop() {
+const SPEED_MULTIPLIER = 1.2;
+const STEP_MS = 1000 / 60 / SPEED_MULTIPLIER;
+const MAX_STEPS_PER_FRAME = 5;
+let lastFrameTime = null;
+let accumulatorMs = 0;
+
+function loop(now) {
   if (!running) return;
+  if (typeof now !== "number") now = performance.now();
+  if (lastFrameTime === null) lastFrameTime = now;
+  let deltaMs = now - lastFrameTime;
+  lastFrameTime = now;
+
   if (!paused) {
-    update();
-    draw();
+    if (deltaMs > 250) deltaMs = 250;
+    accumulatorMs += deltaMs;
+    let steps = 0;
+    while (accumulatorMs >= STEP_MS && steps < MAX_STEPS_PER_FRAME) {
+      update();
+      accumulatorMs -= STEP_MS;
+      steps++;
+    }
+  } else {
+    accumulatorMs = 0;
   }
+  draw();
   animationId = requestAnimationFrame(loop);
 }
 
@@ -1869,11 +1898,14 @@ function startGame() {
   resetGame();
   running = true;
   paused = false;
+  lastFrameTime = null;
+  accumulatorMs = 0;
   loop();
 }
 
 window.addEventListener("keydown", (e) => {
   keys.add(e.key);
+  keys.add(e.code);
   if (e.key === " ") e.preventDefault();
   if ((e.key === "p" || e.key === "P") && running) {
     paused = !paused;
@@ -1896,6 +1928,11 @@ window.addEventListener("keydown", (e) => {
 
 window.addEventListener("keyup", (e) => {
   keys.delete(e.key);
+  keys.delete(e.code);
+});
+
+window.addEventListener("blur", () => {
+  keys.clear();
 });
 
 canvas.addEventListener("mousemove", (e) => {
