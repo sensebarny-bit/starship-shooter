@@ -1146,11 +1146,11 @@ function drawPlayerShip(x, y, w, h) {
     ctx.fill();
   });
 
-  // jagged gunmetal wings, serrated like blades
+  // jagged bone-and-iron wings, serrated like blades
   const wingGrad = ctx.createLinearGradient(cx - w * 0.6, y + h * 0.4, cx + w * 0.6, y + h * 0.85);
-  wingGrad.addColorStop(0, "#2a2d33");
-  wingGrad.addColorStop(0.5, "#747b87");
-  wingGrad.addColorStop(1, "#15171a");
+  wingGrad.addColorStop(0, "#17141f");
+  wingGrad.addColorStop(0.5, "#5a4f45");
+  wingGrad.addColorStop(1, "#0e0a10");
   ctx.fillStyle = wingGrad;
   [-1, 1].forEach((side) => {
     ctx.beginPath();
@@ -1176,7 +1176,7 @@ function drawPlayerShip(x, y, w, h) {
   });
 
   // blade-like tail fins
-  ctx.fillStyle = "#1a1c20";
+  ctx.fillStyle = "#1a1420";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
     ctx.moveTo(cx + side * 1.5, y + h * 0.68);
@@ -1186,11 +1186,11 @@ function drawPlayerShip(x, y, w, h) {
     ctx.fill();
   });
 
-  // gunmetal fuselage, dark metallic gradient
+  // bone-plated fuselage, aged bone-and-iron gradient
   const bodyGrad = ctx.createLinearGradient(cx - 5, y, cx + 5, y + h);
-  bodyGrad.addColorStop(0, "#9aa1ac");
-  bodyGrad.addColorStop(0.45, "#4a4f58");
-  bodyGrad.addColorStop(1, "#1a1c20");
+  bodyGrad.addColorStop(0, "#ede4d0");
+  bodyGrad.addColorStop(0.45, "#6b5f52");
+  bodyGrad.addColorStop(1, "#17141f");
   ctx.fillStyle = bodyGrad;
   ctx.beginPath();
   ctx.moveTo(cx, y);
@@ -1202,8 +1202,19 @@ function drawPlayerShip(x, y, w, h) {
   ctx.closePath();
   ctx.fill();
 
-  // long fanged nose spike
-  ctx.fillStyle = "#e8edf2";
+  // gothic rivets along the hull seam
+  ctx.fillStyle = "#17141f";
+  [0.4, 0.55, 0.7].forEach((f) => {
+    ctx.beginPath();
+    ctx.arc(cx - 2.2, y + h * f, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 2.2, y + h * f, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // long fanged nose spike, bone
+  ctx.fillStyle = "#ede4d0";
   ctx.beginPath();
   ctx.moveTo(cx - 2, y + h * 0.04);
   ctx.lineTo(cx, y - h * 0.14);
@@ -1213,7 +1224,7 @@ function drawPlayerShip(x, y, w, h) {
   ctx.fill();
 
   // shoulder horns where the wings meet the hull
-  ctx.fillStyle = "#1a1c20";
+  ctx.fillStyle = "#1a1420";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
     ctx.moveTo(cx + side * 3, y + h * 0.32);
@@ -1226,6 +1237,12 @@ function drawPlayerShip(x, y, w, h) {
   // crimson blood stripe down the spine
   ctx.fillStyle = "#c21030";
   ctx.fillRect(cx - 0.7, y + h * 0.18, 1.4, h * 0.62);
+
+  // hollow eye socket housing the predator eye
+  ctx.fillStyle = "#0e0a10";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.28, 3.6, 3.6, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   // single glowing predator eye, vertical slit pupil
   ctx.fillStyle = "#ff1c3899";
@@ -1242,7 +1259,7 @@ function drawPlayerShip(x, y, w, h) {
   ctx.fill();
 
   // bared double fangs at the wingtips
-  ctx.fillStyle = "#e8edf2";
+  ctx.fillStyle = "#ede4d0";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
     ctx.moveTo(cx + side * w * 0.55, y + h * 0.64);
@@ -2206,19 +2223,24 @@ function draw() {
     ctx.fillStyle = "#3a040d";
     ctx.fillRect(gx0, 0, GATE_WIDTH, beamHeight);
 
-    // chunky pixel blood columns, cascading downward
+    // chunky pixel blood columns, cascading downward with a flowing motion trail
     const colWidth = 4;
     const cols = Math.floor(GATE_WIDTH / colWidth);
     for (let c = 0; c < cols; c++) {
       const seed = c * 12.9898;
       const hash = Math.abs(Math.sin(seed) * 43758.5453) % 1;
-      const shade = bloodShades[Math.floor(hash * bloodShades.length)];
-      const speed = 60 + hash * 100;
-      const offset = (t / speed + hash * beamHeight) % (beamHeight + 24);
-      const blockH = 8 + Math.floor(hash * 16);
-      ctx.globalAlpha = 0.5 + 0.4 * ((hash + t / 500) % 1);
-      ctx.fillStyle = shade;
-      ctx.fillRect(gx0 + c * colWidth, Math.round(offset - blockH), colWidth - 1, blockH);
+      const speed = 50 + hash * 90;
+      const offset = (t / speed + hash * beamHeight) % (beamHeight + 40);
+      const blockH = 7 + Math.floor(hash * 10);
+      const colX = gx0 + c * colWidth;
+
+      for (let trail = 0; trail < 4; trail++) {
+        const trailY = offset - blockH - trail * (blockH * 0.85);
+        const shade = bloodShades[Math.max(0, bloodShades.length - 1 - trail)];
+        ctx.globalAlpha = Math.max(0, 0.85 - trail * 0.2);
+        ctx.fillStyle = shade;
+        ctx.fillRect(colX, Math.round(trailY), colWidth - 1, blockH * (1 - trail * 0.12));
+      }
     }
 
     ctx.restore();
