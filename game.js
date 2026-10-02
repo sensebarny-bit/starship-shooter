@@ -1061,62 +1061,64 @@ function drawPlayerShip(x, y, w, h) {
   const cx = x + w / 2;
   ctx.save();
 
-  // twin crimson engine trails
-  const flicker = 7 + Math.random() * 4;
+  // twin crimson engine trails, intense
+  const flicker = 8 + Math.random() * 5;
   [-1, 1].forEach((side) => {
     const ex = cx + side * w * 0.16;
     const flameGrad = ctx.createRadialGradient(ex, y + h * 0.95, 1, ex, y + h * 0.95 + flicker, flicker);
-    flameGrad.addColorStop(0, "rgba(220,30,50,0.9)");
-    flameGrad.addColorStop(1, "rgba(220,30,50,0)");
+    flameGrad.addColorStop(0, "rgba(255,10,30,0.95)");
+    flameGrad.addColorStop(1, "rgba(255,10,30,0)");
     ctx.fillStyle = flameGrad;
     ctx.beginPath();
     ctx.arc(ex, y + h * 0.95, flicker, 0, Math.PI * 2);
     ctx.fill();
   });
 
-  // swept chrome delta wings
+  // jagged gunmetal wings, serrated like blades
   const wingGrad = ctx.createLinearGradient(cx - w * 0.6, y + h * 0.4, cx + w * 0.6, y + h * 0.85);
-  wingGrad.addColorStop(0, "#7a8291");
-  wingGrad.addColorStop(0.5, "#d4dae2");
-  wingGrad.addColorStop(1, "#555e6c");
+  wingGrad.addColorStop(0, "#2a2d33");
+  wingGrad.addColorStop(0.5, "#747b87");
+  wingGrad.addColorStop(1, "#15171a");
   ctx.fillStyle = wingGrad;
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.moveTo(cx, y + h * 0.34);
-    ctx.lineTo(cx + side * w * 0.58, y + h * 0.84);
-    ctx.lineTo(cx + side * w * 0.4, y + h * 0.9);
+    ctx.moveTo(cx, y + h * 0.32);
+    ctx.lineTo(cx + side * w * 0.6, y + h * 0.58);
+    ctx.lineTo(cx + side * w * 0.48, y + h * 0.66);
+    ctx.lineTo(cx + side * w * 0.56, y + h * 0.74);
+    ctx.lineTo(cx + side * w * 0.34, y + h * 0.88);
     ctx.lineTo(cx, y + h * 0.58);
     ctx.closePath();
     ctx.fill();
   });
 
-  // blood-red trailing edge on each wing
-  ctx.fillStyle = "#c21030";
+  // blood streaks bleeding down the wings
+  ctx.fillStyle = "#8a0e22";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.moveTo(cx + side * w * 0.58, y + h * 0.84);
-    ctx.lineTo(cx + side * w * 0.4, y + h * 0.9);
-    ctx.lineTo(cx + side * w * 0.33, y + h * 0.82);
+    ctx.moveTo(cx + side * w * 0.3, y + h * 0.55);
+    ctx.lineTo(cx + side * w * 0.32, y + h * 0.55);
+    ctx.lineTo(cx + side * w * 0.27, y + h * 0.72);
     ctx.closePath();
     ctx.fill();
   });
 
-  // tail fins
-  ctx.fillStyle = "#4d5563";
+  // blade-like tail fins
+  ctx.fillStyle = "#1a1c20";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
     ctx.moveTo(cx + side * 1.5, y + h * 0.68);
-    ctx.lineTo(cx + side * 6, y + h * 0.92);
-    ctx.lineTo(cx + side * 1.2, y + h * 0.96);
+    ctx.lineTo(cx + side * 7, y + h * 0.94);
+    ctx.lineTo(cx + side * 1.2, y + h * 0.98);
     ctx.closePath();
     ctx.fill();
   });
 
-  // sleek chrome fuselage, metallic gradient
+  // gunmetal fuselage, dark metallic gradient
   const bodyGrad = ctx.createLinearGradient(cx - 5, y, cx + 5, y + h);
-  bodyGrad.addColorStop(0, "#f5f8fb");
-  bodyGrad.addColorStop(0.45, "#aab4c0");
-  bodyGrad.addColorStop(1, "#4d5563");
+  bodyGrad.addColorStop(0, "#9aa1ac");
+  bodyGrad.addColorStop(0.45, "#4a4f58");
+  bodyGrad.addColorStop(1, "#1a1c20");
   ctx.fillStyle = bodyGrad;
   ctx.beginPath();
   ctx.moveTo(cx, y);
@@ -1128,28 +1130,44 @@ function drawPlayerShip(x, y, w, h) {
   ctx.closePath();
   ctx.fill();
 
-  // crimson racing stripe down the spine
+  // fanged nose spike
+  ctx.fillStyle = "#e8edf2";
+  ctx.beginPath();
+  ctx.moveTo(cx - 1.8, y + h * 0.02);
+  ctx.lineTo(cx, y - h * 0.06);
+  ctx.lineTo(cx + 1.8, y + h * 0.02);
+  ctx.lineTo(cx, y + h * 0.15);
+  ctx.closePath();
+  ctx.fill();
+
+  // crimson blood stripe down the spine
   ctx.fillStyle = "#c21030";
-  ctx.fillRect(cx - 0.7, y + h * 0.16, 1.4, h * 0.64);
+  ctx.fillRect(cx - 0.7, y + h * 0.18, 1.4, h * 0.62);
 
-  // glowing ruby cockpit
-  ctx.fillStyle = "#ff1c3877";
+  // single glowing predator eye, vertical slit pupil
+  ctx.fillStyle = "#ff1c3899";
   ctx.beginPath();
-  ctx.ellipse(cx, y + h * 0.26, 2.2, 3, 0, 0, Math.PI * 2);
+  ctx.arc(cx, y + h * 0.28, 2.6, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ff1c38";
   ctx.beginPath();
-  ctx.ellipse(cx, y + h * 0.26, 1.1, 1.6, 0, 0, Math.PI * 2);
+  ctx.arc(cx, y + h * 0.28, 1.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#17070a";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.28, 0.4, 1.1, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // chrome wingtip lights
-  ctx.fillStyle = "#ff1c38";
-  ctx.beginPath();
-  ctx.arc(cx - w * 0.56, y + h * 0.87, 1.3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + w * 0.56, y + h * 0.87, 1.3, 0, Math.PI * 2);
-  ctx.fill();
+  // bared fangs at the wingtips
+  ctx.fillStyle = "#e8edf2";
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + side * w * 0.56, y + h * 0.66);
+    ctx.lineTo(cx + side * w * 0.63, y + h * 0.7);
+    ctx.lineTo(cx + side * w * 0.52, y + h * 0.72);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   ctx.restore();
 }
