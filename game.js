@@ -1319,6 +1319,39 @@ function drawEvilStarship(x, y, w, h) {
   ctx.arc(cx + 1.8, y + h * 0.62, 1.6, 0, Math.PI * 2);
   ctx.fill();
 
+  // gaping fanged maw
+  ctx.fillStyle = "#0a0710";
+  ctx.beginPath();
+  ctx.moveTo(cx - 2.2, y + h * 0.78);
+  ctx.lineTo(cx + 2.2, y + h * 0.78);
+  ctx.lineTo(cx, y + h * 0.94);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#ded2c3";
+  [-1.4, 1.4].forEach((fx) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + fx, y + h * 0.78);
+    ctx.lineTo(cx + fx * 0.6, y + h * 0.86);
+    ctx.lineTo(cx + fx * 1.3, y + h * 0.8);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // clawed wing joints
+  ctx.fillStyle = "#0a0710";
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.52, y + h * 0.42);
+  ctx.lineTo(cx - w * 0.6, y + h * 0.5);
+  ctx.lineTo(cx - w * 0.46, y + h * 0.46);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + w * 0.52, y + h * 0.42);
+  ctx.lineTo(cx + w * 0.6, y + h * 0.5);
+  ctx.lineTo(cx + w * 0.46, y + h * 0.46);
+  ctx.closePath();
+  ctx.fill();
+
   ctx.restore();
 }
 
@@ -1371,17 +1404,33 @@ function drawCruiser(x, y, w, h) {
     ctx.stroke();
   });
 
-  // skull emblem
+  // skull emblem with glowing hollow eyes
   ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
   ctx.arc(x + w * 0.5, y + h * 0.4, w * 0.09, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#17141f";
+  ctx.fillStyle = "rgba(255,45,77,0.5)";
+  ctx.beginPath();
+  ctx.arc(x + w * 0.47, y + h * 0.39, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + w * 0.53, y + h * 0.39, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ff2d4d";
   ctx.beginPath();
   ctx.arc(x + w * 0.47, y + h * 0.39, 1, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
   ctx.arc(x + w * 0.53, y + h * 0.39, 1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // fanged jaw beneath the emblem
+  ctx.fillStyle = "#17141f";
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.44, y + h * 0.47);
+  ctx.lineTo(x + w * 0.56, y + h * 0.47);
+  ctx.lineTo(x + w * 0.5, y + h * 0.55);
+  ctx.closePath();
   ctx.fill();
 
   // red sensor stripe
@@ -1423,9 +1472,15 @@ function drawStalker(x, y, w, h) {
   ctx.lineWidth = 2;
   [-1, 0, 1].forEach((side) => {
     const sway = Math.sin(Date.now() / 300 + side) * 2;
+    const tipX = cx + side * 3;
+    const tipY = y + h;
     ctx.beginPath();
     ctx.moveTo(cx + side * 4, y + h * 0.7);
-    ctx.quadraticCurveTo(cx + side * 6 + sway, y + h * 0.9, cx + side * 3, y + h);
+    ctx.quadraticCurveTo(cx + side * 6 + sway, y + h * 0.9, tipX, tipY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tipX - 1, tipY - 1);
+    ctx.lineTo(tipX + 1.5, tipY + 1.5);
     ctx.stroke();
   });
 
@@ -1465,7 +1520,7 @@ function drawStalker(x, y, w, h) {
   ctx.fill();
   ctx.fillStyle = "#17141f";
   ctx.beginPath();
-  ctx.arc(cx, cy, 1, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, 0.7, 2.6, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -1481,42 +1536,70 @@ function drawSkullBoss(b) {
   const cy = b.y + b.h / 2;
   const angry = b.phase === 2;
   const eyeColor = angry ? "#ff2d4d" : "#b06bff";
+  const t = Date.now() / 1000;
+  const pulse = 1 + Math.sin(t * 3) * 0.08;
   ctx.save();
   if (b.hitFlash > 0) ctx.globalAlpha = 0.55;
 
-  // ambient aura
-  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 0.85);
-  glow.addColorStop(0, angry ? "rgba(255,45,77,0.5)" : "rgba(176,107,255,0.35)");
+  // roiling ambient aura
+  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 1.05 * pulse);
+  glow.addColorStop(0, angry ? "rgba(255,45,77,0.55)" : "rgba(176,107,255,0.4)");
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.ellipse(cx, cy, b.w * 0.85, b.h * 0.85, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, b.w * 1.05 * pulse, b.h * 1.0 * pulse, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // cranium + jaw silhouette
+  // jagged bone horn cluster
+  const horns = [
+    { ox: -0.36, h: 0.14 },
+    { ox: -0.22, h: 0.28 },
+    { ox: -0.07, h: 0.18 },
+    { ox: 0.09, h: 0.34 },
+    { ox: 0.24, h: 0.17 },
+    { ox: 0.37, h: 0.24 },
+  ];
+  ctx.fillStyle = "#1a1420";
+  horns.forEach((hn) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + b.w * hn.ox - b.w * 0.035, cy - b.h * 0.54);
+    ctx.lineTo(cx + b.w * hn.ox + b.w * 0.015, cy - b.h * (0.54 + hn.h));
+    ctx.lineTo(cx + b.w * hn.ox + b.w * 0.035, cy - b.h * 0.54);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // cranium + jaw silhouette (asymmetric, fractured)
   ctx.fillStyle = "#f2ead9";
   ctx.beginPath();
-  ctx.moveTo(cx - b.w * 0.42, cy);
-  ctx.quadraticCurveTo(cx - b.w * 0.42, cy - b.h * 0.55, cx, cy - b.h * 0.55);
-  ctx.quadraticCurveTo(cx + b.w * 0.42, cy - b.h * 0.55, cx + b.w * 0.42, cy);
-  ctx.lineTo(cx + b.w * 0.3, cy + b.h * 0.22);
-  ctx.lineTo(cx + b.w * 0.18, cy + b.h * 0.4);
-  ctx.lineTo(cx - b.w * 0.18, cy + b.h * 0.4);
-  ctx.lineTo(cx - b.w * 0.3, cy + b.h * 0.22);
+  ctx.moveTo(cx - b.w * 0.44, cy - b.h * 0.02);
+  ctx.quadraticCurveTo(cx - b.w * 0.46, cy - b.h * 0.56, cx - b.w * 0.04, cy - b.h * 0.56);
+  ctx.quadraticCurveTo(cx + b.w * 0.42, cy - b.h * 0.58, cx + b.w * 0.44, cy - b.h * 0.04);
+  ctx.lineTo(cx + b.w * 0.34, cy + b.h * 0.2);
+  ctx.lineTo(cx + b.w * 0.22, cy + b.h * 0.44);
+  ctx.lineTo(cx - b.w * 0.2, cy + b.h * 0.44);
+  ctx.lineTo(cx - b.w * 0.32, cy + b.h * 0.2);
   ctx.closePath();
   ctx.fill();
 
-  // bone cracks
-  ctx.strokeStyle = "rgba(0,0,0,0.25)";
+  // fracture cracks + missing bone chunk
+  ctx.fillStyle = "rgba(10,5,16,0.65)";
+  ctx.beginPath();
+  ctx.moveTo(cx + b.w * 0.3, cy - b.h * 0.42);
+  ctx.lineTo(cx + b.w * 0.38, cy - b.h * 0.32);
+  ctx.lineTo(cx + b.w * 0.3, cy - b.h * 0.26);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.3)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(cx - b.w * 0.1, cy - b.h * 0.5);
   ctx.lineTo(cx - b.w * 0.04, cy - b.h * 0.3);
-  ctx.lineTo(cx - b.w * 0.12, cy - b.h * 0.15);
+  ctx.lineTo(cx - b.w * 0.14, cy - b.h * 0.12);
   ctx.stroke();
 
   // cheekbone shading
-  ctx.fillStyle = "rgba(0,0,0,0.08)";
+  ctx.fillStyle = "rgba(0,0,0,0.1)";
   ctx.beginPath();
   ctx.ellipse(cx - b.w * 0.3, cy + b.h * 0.08, b.w * 0.08, b.h * 0.12, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -1524,22 +1607,22 @@ function drawSkullBoss(b) {
   ctx.ellipse(cx + b.w * 0.3, cy + b.h * 0.08, b.w * 0.08, b.h * 0.12, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // eye sockets
-  ctx.fillStyle = "#1a1420";
+  // twin eye sockets
+  ctx.fillStyle = "#0e0a14";
   ctx.beginPath();
-  ctx.ellipse(cx - b.w * 0.18, cy - b.h * 0.05, b.w * 0.13, b.h * 0.15, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx - b.w * 0.19, cy - b.h * 0.06, b.w * 0.14, b.h * 0.16, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.ellipse(cx + b.w * 0.18, cy - b.h * 0.05, b.w * 0.13, b.h * 0.15, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + b.w * 0.17, cy - b.h * 0.07, b.w * 0.15, b.h * 0.17, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // glowing pupils (layered glow instead of shadowBlur)
   [-1, 1].forEach((side) => {
     const ex = cx + side * b.w * 0.18;
-    const ey = cy - b.h * 0.05;
-    ctx.fillStyle = eyeColor + "55";
+    const ey = cy - b.h * 0.06;
+    ctx.fillStyle = eyeColor + "66";
     ctx.beginPath();
-    ctx.arc(ex, ey, b.w * 0.09, 0, Math.PI * 2);
+    ctx.arc(ex, ey, b.w * 0.1, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = eyeColor;
     ctx.beginPath();
@@ -1547,57 +1630,59 @@ function drawSkullBoss(b) {
     ctx.fill();
   });
 
+  // third void eye of omen
+  ctx.fillStyle = "#0e0a14";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - b.h * 0.3, b.w * 0.06, b.h * 0.08, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = eyeColor + "99";
+  ctx.beginPath();
+  ctx.arc(cx, cy - b.h * 0.3, b.w * 0.035 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
   // nasal cavity
-  ctx.fillStyle = "#1a1420";
+  ctx.fillStyle = "#0e0a14";
   ctx.beginPath();
   ctx.moveTo(cx, cy + b.h * 0.06);
-  ctx.lineTo(cx - b.w * 0.05, cy + b.h * 0.17);
-  ctx.lineTo(cx + b.w * 0.05, cy + b.h * 0.17);
+  ctx.lineTo(cx - b.w * 0.06, cy + b.h * 0.18);
+  ctx.lineTo(cx + b.w * 0.06, cy + b.h * 0.18);
   ctx.closePath();
   ctx.fill();
 
-  // teeth
+  // gaping jaw, jagged broken fangs of uneven length
+  const fangLen = [0.1, 0.22, 0.08, 0.26, 0.14, 0.2, 0.09];
   ctx.strokeStyle = "#cdbfa0";
-  ctx.lineWidth = 1.5;
-  const teeth = 6;
-  for (let i = 0; i <= teeth; i++) {
-    const tx = cx - b.w * 0.18 + ((b.w * 0.36) / teeth) * i;
+  ctx.lineWidth = 1.6;
+  for (let i = 0; i < fangLen.length; i++) {
+    const tx = cx - b.w * 0.2 + ((b.w * 0.4) / (fangLen.length - 1)) * i;
     ctx.beginPath();
-    ctx.moveTo(tx, cy + b.h * 0.22);
-    ctx.lineTo(tx, cy + b.h * 0.38);
+    ctx.moveTo(tx, cy + b.h * 0.24);
+    ctx.lineTo(tx, cy + b.h * 0.24 + b.h * fangLen[i]);
     ctx.stroke();
   }
 
-  // fancy crown
-  ctx.fillStyle = "#e8c15a";
-  ctx.fillRect(cx - b.w * 0.32, cy - b.h * 0.56, b.w * 0.64, b.h * 0.07);
-  ctx.beginPath();
-  ctx.moveTo(cx - b.w * 0.28, cy - b.h * 0.56);
-  ctx.lineTo(cx - b.w * 0.22, cy - b.h * 0.72);
-  ctx.lineTo(cx - b.w * 0.16, cy - b.h * 0.56);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(cx - b.w * 0.08, cy - b.h * 0.56);
-  ctx.lineTo(cx, cy - b.h * 0.78);
-  ctx.lineTo(cx + b.w * 0.08, cy - b.h * 0.56);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(cx + b.w * 0.16, cy - b.h * 0.56);
-  ctx.lineTo(cx + b.w * 0.22, cy - b.h * 0.72);
-  ctx.lineTo(cx + b.w * 0.28, cy - b.h * 0.56);
-  ctx.closePath();
-  ctx.fill();
+  // dripping ichor
+  ctx.fillStyle = angry ? "rgba(255,45,77,0.6)" : "rgba(14,10,20,0.6)";
+  [
+    [-0.12, 0.12],
+    [0.08, 0.09],
+  ].forEach(([ox, drip]) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + b.w * ox - 1, cy + b.h * 0.42);
+    ctx.lineTo(cx + b.w * ox, cy + b.h * (0.42 + drip));
+    ctx.lineTo(cx + b.w * ox + 1, cy + b.h * 0.42);
+    ctx.closePath();
+    ctx.fill();
+  });
 
-  // crown gem (layered glow instead of shadowBlur)
-  ctx.fillStyle = eyeColor + "55";
+  // crown gem atop the tallest horn
+  ctx.fillStyle = eyeColor + "66";
   ctx.beginPath();
-  ctx.ellipse(cx, cy - b.h * 0.68, b.w * 0.07, b.h * 0.08, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + b.w * 0.09, cy - b.h * 0.88, b.w * 0.07, b.h * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = eyeColor;
   ctx.beginPath();
-  ctx.ellipse(cx, cy - b.h * 0.68, b.w * 0.04, b.h * 0.05, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + b.w * 0.09, cy - b.h * 0.88, b.w * 0.04, b.h * 0.05, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -1637,64 +1722,112 @@ function drawGhostPirateBoss(b) {
   else ctx.globalAlpha = ghostAlpha;
 
   // spectral aura
-  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 0.9);
-  glow.addColorStop(0, angry ? "rgba(255,93,115,0.4)" : "rgba(111,255,224,0.35)");
+  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 1.0);
+  glow.addColorStop(0, angry ? "rgba(255,93,115,0.45)" : "rgba(111,255,224,0.38)");
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.ellipse(cx, cy, b.w * 0.9, b.h * 0.85, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, b.w * 1.0, b.h * 0.95, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // tattered ghost trail (ragged bottom edge of the hull)
+  // drowned tendrils trailing below the wreck
+  ctx.strokeStyle = hullColor;
+  ctx.lineWidth = 2;
+  [-0.32, -0.1, 0.14, 0.34].forEach((ox, i) => {
+    const sway = Math.sin(t * 1.6 + i) * 4;
+    ctx.beginPath();
+    ctx.moveTo(cx + b.w * ox, b.y + b.h * 0.95);
+    ctx.quadraticCurveTo(
+      cx + b.w * ox + sway,
+      b.y + b.h * 1.15,
+      cx + b.w * ox + sway * 0.6,
+      b.y + b.h * 1.3
+    );
+    ctx.stroke();
+  });
+
+  // ragged, splintered trail (bottom edge of the hull)
   ctx.fillStyle = hullColor;
   ctx.beginPath();
-  ctx.moveTo(b.x + b.w * 0.1, b.y + b.h * 0.35);
-  ctx.lineTo(b.x + b.w * 0.9, b.y + b.h * 0.35);
-  ctx.lineTo(b.x + b.w * 0.78, b.y + b.h * 0.95);
-  ctx.lineTo(b.x + b.w * 0.63, b.y + b.h * 0.65);
-  ctx.lineTo(b.x + b.w * 0.5, b.y + b.h * 0.98);
-  ctx.lineTo(b.x + b.w * 0.37, b.y + b.h * 0.65);
-  ctx.lineTo(b.x + b.w * 0.22, b.y + b.h * 0.95);
+  ctx.moveTo(b.x + b.w * 0.08, b.y + b.h * 0.35);
+  ctx.lineTo(b.x + b.w * 0.92, b.y + b.h * 0.35);
+  ctx.lineTo(b.x + b.w * 0.82, b.y + b.h * 1.02);
+  ctx.lineTo(b.x + b.w * 0.68, b.y + b.h * 0.62);
+  ctx.lineTo(b.x + b.w * 0.56, b.y + b.h * 1.08);
+  ctx.lineTo(b.x + b.w * 0.44, b.y + b.h * 0.6);
+  ctx.lineTo(b.x + b.w * 0.32, b.y + b.h * 1.0);
+  ctx.lineTo(b.x + b.w * 0.18, b.y + b.h * 0.62);
   ctx.closePath();
   ctx.fill();
 
-  // galleon hull body
+  // splintered ribcage hull body
   ctx.beginPath();
   ctx.moveTo(b.x, b.y + b.h * 0.2);
-  ctx.quadraticCurveTo(cx, b.y - b.h * 0.08, b.x + b.w, b.y + b.h * 0.2);
+  ctx.quadraticCurveTo(cx, b.y - b.h * 0.1, b.x + b.w, b.y + b.h * 0.2);
   ctx.lineTo(b.x + b.w * 0.85, b.y + b.h * 0.4);
   ctx.lineTo(b.x + b.w * 0.15, b.y + b.h * 0.4);
   ctx.closePath();
   ctx.fill();
 
-  // tattered tears in the hull
-  ctx.fillStyle = "rgba(0,0,0,0.3)";
-  ctx.beginPath();
-  ctx.ellipse(b.x + b.w * 0.32, b.y + b.h * 0.28, 2.6, 1.6, 0.4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(b.x + b.w * 0.68, b.y + b.h * 0.3, 2, 1.3, -0.3, 0, Math.PI * 2);
-  ctx.fill();
+  // exposed rib struts
+  ctx.strokeStyle = "rgba(10,20,15,0.4)";
+  ctx.lineWidth = 1;
+  [0.3, 0.45, 0.6, 0.75].forEach((f) => {
+    ctx.beginPath();
+    ctx.moveTo(cx, b.y - b.h * 0.06);
+    ctx.lineTo(b.x + b.w * f, b.y + b.h * 0.37);
+    ctx.stroke();
+  });
+
+  // rotted tears in the hull
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  [
+    [0.24, 0.26, 2.4],
+    [0.5, 0.22, 1.8],
+    [0.73, 0.3, 2.2],
+  ].forEach(([fx, fy, r]) => {
+    ctx.beginPath();
+    ctx.ellipse(b.x + b.w * fx, b.y + b.h * fy, r, r * 0.6, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
   // mast
   ctx.strokeStyle = hullColor;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(cx, b.y - b.h * 0.08);
-  ctx.lineTo(cx, b.y - b.h * 0.32);
+  ctx.moveTo(cx, b.y - b.h * 0.1);
+  ctx.lineTo(cx, b.y - b.h * 0.34);
   ctx.stroke();
 
-  // skull-and-crossbones flag
+  // tattered sail-flag, torn edge
   ctx.fillStyle = angry ? "#ff5d73" : "#2a2f3a";
   ctx.beginPath();
-  ctx.moveTo(cx, b.y - b.h * 0.32);
-  ctx.lineTo(cx + b.w * 0.22, b.y - b.h * 0.26);
-  ctx.lineTo(cx, b.y - b.h * 0.2);
+  ctx.moveTo(cx, b.y - b.h * 0.34);
+  ctx.lineTo(cx + b.w * 0.24, b.y - b.h * 0.3);
+  ctx.lineTo(cx + b.w * 0.18, b.y - b.h * 0.25);
+  ctx.lineTo(cx + b.w * 0.22, b.y - b.h * 0.2);
+  ctx.lineTo(cx, b.y - b.h * 0.18);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
-  ctx.arc(cx + b.w * 0.09, b.y - b.h * 0.26, 3, 0, Math.PI * 2);
+  ctx.arc(cx + b.w * 0.1, b.y - b.h * 0.26, 2.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // drowned captain's wraith, bound to the masthead
+  ctx.fillStyle = "rgba(20,10,30,0.75)";
+  ctx.beginPath();
+  ctx.moveTo(cx, b.y - b.h * 0.46);
+  ctx.lineTo(cx + b.w * 0.07, b.y - b.h * 0.36);
+  ctx.lineTo(cx - b.w * 0.07, b.y - b.h * 0.36);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = angry ? "#ff2d4d" : "#7cffe8";
+  ctx.beginPath();
+  ctx.arc(cx - b.w * 0.025, b.y - b.h * 0.4, 0.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + b.w * 0.025, b.y - b.h * 0.4, 0.9, 0, Math.PI * 2);
   ctx.fill();
 
   // glowing cannon ports (layered glow instead of shadowBlur)
@@ -1712,18 +1845,24 @@ function drawGhostPirateBoss(b) {
     ctx.fill();
   });
 
-  // eerie bridge eyes (layered glow instead of shadowBlur)
+  // eerie bridge eyes, wide and malevolent (layered glow instead of shadowBlur)
   const eyeFill = angry ? "#ff2d4d" : "#7cffe8";
   ctx.fillStyle = eyeFill + "55";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.ellipse(cx + side * b.w * 0.12, b.y + b.h * 0.1, 7, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + side * b.w * 0.13, b.y + b.h * 0.1, 8, 9, 0, 0, Math.PI * 2);
     ctx.fill();
   });
   ctx.fillStyle = eyeFill;
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.ellipse(cx + side * b.w * 0.12, b.y + b.h * 0.1, 4, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + side * b.w * 0.13, b.y + b.h * 0.1, 4.5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.fillStyle = "#0a0a0a";
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.ellipse(cx + side * b.w * 0.13, b.y + b.h * 0.1, 1.6, 3, 0, 0, Math.PI * 2);
     ctx.fill();
   });
 
