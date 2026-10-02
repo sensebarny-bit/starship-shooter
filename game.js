@@ -7,6 +7,7 @@ const laserEl = document.getElementById("laserCount");
 const rocketEl = document.getElementById("rocketCount");
 const phoenixEl = document.getElementById("phoenixCount");
 const empEl = document.getElementById("empCount");
+const gateEl = document.getElementById("gateCount");
 const overlay = document.getElementById("overlay");
 const gameOverOverlay = document.getElementById("gameOverOverlay");
 const finalScoreEl = document.getElementById("finalScore");
@@ -97,6 +98,9 @@ const player = {
   phoenixTimer: 0,
   phoenixKills: 0,
   empCharge: 0,
+  gateState: "idle",
+  gateStateTimer: 0,
+  gateTimer: 0,
 };
 
 let bullets = [];
@@ -392,6 +396,9 @@ function resetGame() {
   player.phoenixTimer = 0;
   player.phoenixKills = 0;
   player.empCharge = 0;
+  player.gateState = "idle";
+  player.gateStateTimer = 0;
+  player.gateTimer = 0;
   bullets = [];
   enemyBullets = [];
   particles = [];
@@ -420,6 +427,15 @@ function updateHud() {
       ? `Wraith King: READY x${player.phoenixCharge}`
       : `Wraith King: ${player.phoenixKills}/10`;
   empEl.textContent = `EMP: ${player.empCharge}`;
+  if (player.gateState === "charging") {
+    gateEl.textContent = `Blood Gate: OPENING...`;
+  } else if (player.gateState === "firing") {
+    gateEl.textContent = `Blood Gate: FIRING ${Math.ceil(player.gateStateTimer / 72)}s`;
+  } else if (player.gateTimer > 0) {
+    gateEl.textContent = `Blood Gate: ${Math.ceil(player.gateTimer / 72)}s`;
+  } else {
+    gateEl.textContent = `Blood Gate: READY`;
+  }
 }
 
 function rectsOverlap(a, b) {
@@ -511,6 +527,17 @@ function fireRocket() {
     h: 16,
     vy: 6.5,
   });
+}
+
+const GATE_CHARGE_TICKS = 58;
+const GATE_FIRE_TICKS = 216;
+const GATE_COOLDOWN_TICKS = 1080;
+const GATE_WIDTH = WIDTH * 0.62;
+
+function activateGateBeam() {
+  player.gateState = "charging";
+  player.gateStateTimer = GATE_CHARGE_TICKS;
+  spawnExplosion(player.x + player.w / 2, player.y, "#ff1c38");
 }
 
 function activatePhoenix() {
@@ -1015,6 +1042,51 @@ function update() {
     checkBossDefeat();
   }
 
+  if (player.gateTimer > 0) player.gateTimer--;
+
+  if (player.gateState === "charging") {
+    player.gateStateTimer--;
+    if (Math.random() < 0.5) {
+      particles.push({
+        x: player.x + player.w / 2 + (Math.random() - 0.5) * 14,
+        y: player.y - 4 - Math.random() * 10,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: -Math.random() * 1.5,
+        life: 16 + Math.random() * 8,
+        color: "#ff1c38",
+      });
+    }
+    if (player.gateStateTimer <= 0) {
+      player.gateState = "firing";
+      player.gateStateTimer = GATE_FIRE_TICKS;
+    }
+  } else if (player.gateState === "firing") {
+    player.gateStateTimer--;
+    const gx0 = player.x + player.w / 2 - GATE_WIDTH / 2;
+    const gx1 = player.x + player.w / 2 + GATE_WIDTH / 2;
+    enemies.forEach((e) => {
+      if (e.alive && e.x < gx1 && e.x + e.w > gx0) {
+        e.hp -= 1;
+        if (e.hp <= 0) {
+          e.alive = false;
+          state.score += 10;
+          addPhoenixProgress(1);
+          spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#ff1c38");
+          if (Math.random() < 0.14) spawnPickup(e.x + e.w / 2, e.y + e.h / 2);
+        }
+      }
+    });
+    if (boss && !boss.entering && boss.x < gx1 && boss.x + boss.w > gx0) {
+      boss.hp -= 0.3;
+      boss.hitFlash = 4;
+    }
+    checkBossDefeat();
+    if (player.gateStateTimer <= 0) {
+      player.gateState = "idle";
+      player.gateTimer = GATE_COOLDOWN_TICKS;
+    }
+  }
+
   particles.forEach((p) => {
     p.x += p.vx;
     p.y += p.vy;
@@ -1130,15 +1202,26 @@ function drawPlayerShip(x, y, w, h) {
   ctx.closePath();
   ctx.fill();
 
-  // fanged nose spike
+  // long fanged nose spike
   ctx.fillStyle = "#e8edf2";
   ctx.beginPath();
-  ctx.moveTo(cx - 1.8, y + h * 0.02);
-  ctx.lineTo(cx, y - h * 0.06);
-  ctx.lineTo(cx + 1.8, y + h * 0.02);
-  ctx.lineTo(cx, y + h * 0.15);
+  ctx.moveTo(cx - 2, y + h * 0.04);
+  ctx.lineTo(cx, y - h * 0.14);
+  ctx.lineTo(cx + 2, y + h * 0.04);
+  ctx.lineTo(cx, y + h * 0.17);
   ctx.closePath();
   ctx.fill();
+
+  // shoulder horns where the wings meet the hull
+  ctx.fillStyle = "#1a1c20";
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + side * 3, y + h * 0.32);
+    ctx.lineTo(cx + side * 8, y + h * 0.26);
+    ctx.lineTo(cx + side * 4.5, y + h * 0.4);
+    ctx.closePath();
+    ctx.fill();
+  });
 
   // crimson blood stripe down the spine
   ctx.fillStyle = "#c21030";
@@ -1158,13 +1241,19 @@ function drawPlayerShip(x, y, w, h) {
   ctx.ellipse(cx, y + h * 0.28, 0.4, 1.1, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // bared fangs at the wingtips
+  // bared double fangs at the wingtips
   ctx.fillStyle = "#e8edf2";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.moveTo(cx + side * w * 0.56, y + h * 0.66);
-    ctx.lineTo(cx + side * w * 0.63, y + h * 0.7);
-    ctx.lineTo(cx + side * w * 0.52, y + h * 0.72);
+    ctx.moveTo(cx + side * w * 0.55, y + h * 0.64);
+    ctx.lineTo(cx + side * w * 0.65, y + h * 0.69);
+    ctx.lineTo(cx + side * w * 0.53, y + h * 0.7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + side * w * 0.5, y + h * 0.72);
+    ctx.lineTo(cx + side * w * 0.59, y + h * 0.77);
+    ctx.lineTo(cx + side * w * 0.47, y + h * 0.76);
     ctx.closePath();
     ctx.fill();
   });
@@ -2083,6 +2172,42 @@ function draw() {
     ctx.restore();
   }
 
+  if (player.gateState === "charging") {
+    const progress = 1 - player.gateStateTimer / GATE_CHARGE_TICKS;
+    const gcx = player.x + player.w / 2;
+    const gcy = player.y - 6;
+    const ringR = 4 + progress * (GATE_WIDTH / 2 - 4);
+    ctx.save();
+    ctx.globalAlpha = 0.5 + progress * 0.5;
+    ctx.strokeStyle = "#ff1c38";
+    ctx.lineWidth = 2 + progress * 2;
+    ctx.beginPath();
+    ctx.ellipse(gcx, gcy, ringR, ringR * 0.3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,28,56,0.4)";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.ellipse(gcx, gcy, ringR * 0.85, ringR * 0.26, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  if (player.gateState === "firing") {
+    const gcx = player.x + player.w / 2;
+    const gx0 = gcx - GATE_WIDTH / 2;
+    const flicker = 0.85 + Math.random() * 0.15;
+    ctx.save();
+    const gateGrad = ctx.createLinearGradient(gx0, 0, gx0 + GATE_WIDTH, 0);
+    gateGrad.addColorStop(0, "rgba(255,28,56,0)");
+    gateGrad.addColorStop(0.15, `rgba(255,28,56,${0.75 * flicker})`);
+    gateGrad.addColorStop(0.5, `rgba(255,220,220,${0.95 * flicker})`);
+    gateGrad.addColorStop(0.85, `rgba(255,28,56,${0.75 * flicker})`);
+    gateGrad.addColorStop(1, "rgba(255,28,56,0)");
+    ctx.fillStyle = gateGrad;
+    ctx.fillRect(gx0, 0, GATE_WIDTH, player.y + player.h / 2);
+    ctx.restore();
+  }
+
   particles.forEach((p) => {
     ctx.globalAlpha = Math.max(p.life / 40, 0);
     ctx.fillStyle = p.color;
@@ -2246,6 +2371,9 @@ window.addEventListener("keydown", (e) => {
     }
     if (e.key === "ArrowUp" && player.empCharge > 0) {
       activateEmp();
+    }
+    if (e.key === "ArrowDown" && player.gateState === "idle" && player.gateTimer <= 0) {
+      activateGateBeam();
     }
   }
 });

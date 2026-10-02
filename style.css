@@ -53,6 +53,11 @@ body {
   text-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
 }
 
+#gateCount {
+  color: #ff1c38;
+  text-shadow: 0 0 6px rgba(255, 28, 56, 0.6);
+}
+
 canvas {
   background: #0a0510;
   border: 2px solid #5b3f99;
