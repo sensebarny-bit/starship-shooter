@@ -78,7 +78,7 @@ let mouseY = 0;
 
 const state = {
   score: 0,
-  lives: 10,
+  lives: 20,
   wave: 1,
 };
 
@@ -383,7 +383,7 @@ function spawnWave(wave) {
 
 function resetGame() {
   state.score = 0;
-  state.lives = 10;
+  state.lives = 20;
   state.wave = 1;
   player.x = WIDTH / 2 - player.w / 2;
   player.y = HEIGHT - 60;
@@ -532,7 +532,7 @@ function fireRocket() {
 const GATE_CHARGE_TICKS = 58;
 const GATE_FIRE_TICKS = 216;
 const GATE_COOLDOWN_TICKS = 1080;
-const GATE_WIDTH = WIDTH * 0.62;
+const GATE_WIDTH = WIDTH * 0.42;
 
 function activateGateBeam() {
   player.gateState = "charging";
@@ -2195,16 +2195,32 @@ function draw() {
   if (player.gateState === "firing") {
     const gcx = player.x + player.w / 2;
     const gx0 = gcx - GATE_WIDTH / 2;
-    const flicker = 0.85 + Math.random() * 0.15;
+    const beamHeight = player.y + player.h / 2;
+    const t = Date.now();
+    const bloodShades = ["#3a040d", "#6b0a1c", "#a30f27", "#d4132f", "#ff1c38"];
+
     ctx.save();
-    const gateGrad = ctx.createLinearGradient(gx0, 0, gx0 + GATE_WIDTH, 0);
-    gateGrad.addColorStop(0, "rgba(255,28,56,0)");
-    gateGrad.addColorStop(0.15, `rgba(255,28,56,${0.75 * flicker})`);
-    gateGrad.addColorStop(0.5, `rgba(255,220,220,${0.95 * flicker})`);
-    gateGrad.addColorStop(0.85, `rgba(255,28,56,${0.75 * flicker})`);
-    gateGrad.addColorStop(1, "rgba(255,28,56,0)");
-    ctx.fillStyle = gateGrad;
-    ctx.fillRect(gx0, 0, GATE_WIDTH, player.y + player.h / 2);
+
+    // dark blood-soaked wash behind everything
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = "#3a040d";
+    ctx.fillRect(gx0, 0, GATE_WIDTH, beamHeight);
+
+    // chunky pixel blood columns, cascading downward
+    const colWidth = 4;
+    const cols = Math.floor(GATE_WIDTH / colWidth);
+    for (let c = 0; c < cols; c++) {
+      const seed = c * 12.9898;
+      const hash = Math.abs(Math.sin(seed) * 43758.5453) % 1;
+      const shade = bloodShades[Math.floor(hash * bloodShades.length)];
+      const speed = 60 + hash * 100;
+      const offset = (t / speed + hash * beamHeight) % (beamHeight + 24);
+      const blockH = 8 + Math.floor(hash * 16);
+      ctx.globalAlpha = 0.5 + 0.4 * ((hash + t / 500) % 1);
+      ctx.fillStyle = shade;
+      ctx.fillRect(gx0 + c * colWidth, Math.round(offset - blockH), colWidth - 1, blockH);
+    }
+
     ctx.restore();
   }
 
