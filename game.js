@@ -1061,110 +1061,94 @@ function drawPlayerShip(x, y, w, h) {
   const cx = x + w / 2;
   ctx.save();
 
-  // crimson soulfire engine trail
-  const flicker = 8 + Math.random() * 5;
-  const flameGrad = ctx.createRadialGradient(cx, y + h, 1, cx, y + h + flicker, flicker);
-  flameGrad.addColorStop(0, "rgba(220,30,50,0.9)");
-  flameGrad.addColorStop(1, "rgba(220,30,50,0)");
-  ctx.fillStyle = flameGrad;
-  ctx.beginPath();
-  ctx.arc(cx, y + h, flicker, 0, Math.PI * 2);
-  ctx.fill();
+  // twin crimson engine trails
+  const flicker = 7 + Math.random() * 4;
+  [-1, 1].forEach((side) => {
+    const ex = cx + side * w * 0.16;
+    const flameGrad = ctx.createRadialGradient(ex, y + h * 0.95, 1, ex, y + h * 0.95 + flicker, flicker);
+    flameGrad.addColorStop(0, "rgba(220,30,50,0.9)");
+    flameGrad.addColorStop(1, "rgba(220,30,50,0)");
+    ctx.fillStyle = flameGrad;
+    ctx.beginPath();
+    ctx.arc(ex, y + h * 0.95, flicker, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
-  // tapered chrome tail
-  ctx.fillStyle = "#7a8291";
-  ctx.beginPath();
-  ctx.moveTo(cx - 2, y + h * 0.6);
-  ctx.lineTo(cx + 2, y + h * 0.6);
-  ctx.lineTo(cx + 1.2, y + h * 0.88);
-  ctx.lineTo(cx, y + h);
-  ctx.lineTo(cx - 1.2, y + h * 0.88);
-  ctx.closePath();
-  ctx.fill();
-
-  // sweeping vampire cape wings, blood-red interior
-  ctx.fillStyle = "#450a14";
+  // swept chrome delta wings
+  const wingGrad = ctx.createLinearGradient(cx - w * 0.6, y + h * 0.4, cx + w * 0.6, y + h * 0.85);
+  wingGrad.addColorStop(0, "#7a8291");
+  wingGrad.addColorStop(0.5, "#d4dae2");
+  wingGrad.addColorStop(1, "#555e6c");
+  ctx.fillStyle = wingGrad;
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.moveTo(cx, y + h * 0.28);
-    ctx.quadraticCurveTo(cx + side * w * 0.55, y + h * 0.18, cx + side * w * 0.6, y + h * 0.58);
-    ctx.quadraticCurveTo(cx + side * w * 0.4, y + h * 0.72, cx + side * w * 0.2, y + h * 0.52);
-    ctx.quadraticCurveTo(cx + side * w * 0.08, y + h * 0.36, cx, y + h * 0.28);
+    ctx.moveTo(cx, y + h * 0.34);
+    ctx.lineTo(cx + side * w * 0.58, y + h * 0.84);
+    ctx.lineTo(cx + side * w * 0.4, y + h * 0.9);
+    ctx.lineTo(cx, y + h * 0.58);
     ctx.closePath();
     ctx.fill();
   });
 
-  // chrome trim along the cape's leading edge
-  ctx.strokeStyle = "#dfe6ee";
-  ctx.lineWidth = 1;
+  // blood-red trailing edge on each wing
+  ctx.fillStyle = "#c21030";
   [-1, 1].forEach((side) => {
     ctx.beginPath();
-    ctx.moveTo(cx, y + h * 0.28);
-    ctx.quadraticCurveTo(cx + side * w * 0.55, y + h * 0.18, cx + side * w * 0.6, y + h * 0.58);
-    ctx.stroke();
+    ctx.moveTo(cx + side * w * 0.58, y + h * 0.84);
+    ctx.lineTo(cx + side * w * 0.4, y + h * 0.9);
+    ctx.lineTo(cx + side * w * 0.33, y + h * 0.82);
+    ctx.closePath();
+    ctx.fill();
   });
 
-  // high popped collar, polished chrome
-  ctx.fillStyle = "#b7c0cc";
+  // tail fins
+  ctx.fillStyle = "#4d5563";
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + side * 1.5, y + h * 0.68);
+    ctx.lineTo(cx + side * 6, y + h * 0.92);
+    ctx.lineTo(cx + side * 1.2, y + h * 0.96);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // sleek chrome fuselage, metallic gradient
+  const bodyGrad = ctx.createLinearGradient(cx - 5, y, cx + 5, y + h);
+  bodyGrad.addColorStop(0, "#f5f8fb");
+  bodyGrad.addColorStop(0.45, "#aab4c0");
+  bodyGrad.addColorStop(1, "#4d5563");
+  ctx.fillStyle = bodyGrad;
   ctx.beginPath();
-  ctx.moveTo(cx, y + h * 0.3);
-  ctx.lineTo(cx - w * 0.22, y - h * 0.02);
-  ctx.lineTo(cx - w * 0.07, y + h * 0.3);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(cx, y + h * 0.3);
-  ctx.lineTo(cx + w * 0.22, y - h * 0.02);
-  ctx.lineTo(cx + w * 0.07, y + h * 0.3);
+  ctx.moveTo(cx, y);
+  ctx.lineTo(cx + 4, y + h * 0.32);
+  ctx.lineTo(cx + 3, y + h * 0.84);
+  ctx.lineTo(cx, y + h * 0.95);
+  ctx.lineTo(cx - 3, y + h * 0.84);
+  ctx.lineTo(cx - 4, y + h * 0.32);
   ctx.closePath();
   ctx.fill();
 
-  // chrome head, metallic gradient
-  const headGrad = ctx.createLinearGradient(cx - 5, y, cx + 5, y + h * 0.3);
-  headGrad.addColorStop(0, "#f5f8fb");
-  headGrad.addColorStop(0.5, "#9aa5b2");
-  headGrad.addColorStop(1, "#4d5563");
-  ctx.fillStyle = headGrad;
-  ctx.beginPath();
-  ctx.moveTo(cx, y + h * 0.04);
-  ctx.lineTo(cx + 4.2, y + h * 0.2);
-  ctx.lineTo(cx, y + h * 0.32);
-  ctx.lineTo(cx - 4.2, y + h * 0.2);
-  ctx.closePath();
-  ctx.fill();
+  // crimson racing stripe down the spine
+  ctx.fillStyle = "#c21030";
+  ctx.fillRect(cx - 0.7, y + h * 0.16, 1.4, h * 0.64);
 
-  // glowing crimson eyes
-  ctx.fillStyle = "#ff1c38";
-  ctx.beginPath();
-  ctx.arc(cx - 1.6, y + h * 0.18, 0.9, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + 1.6, y + h * 0.18, 0.9, 0, Math.PI * 2);
-  ctx.fill();
-
-  // fangs
-  ctx.fillStyle = "#f5f8fb";
-  ctx.beginPath();
-  ctx.moveTo(cx - 1, y + h * 0.26);
-  ctx.lineTo(cx - 0.4, y + h * 0.32);
-  ctx.lineTo(cx - 1.6, y + h * 0.3);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(cx + 1, y + h * 0.26);
-  ctx.lineTo(cx + 0.4, y + h * 0.32);
-  ctx.lineTo(cx + 1.6, y + h * 0.3);
-  ctx.closePath();
-  ctx.fill();
-
-  // royal ruby brooch at the throat
+  // glowing ruby cockpit
   ctx.fillStyle = "#ff1c3877";
   ctx.beginPath();
-  ctx.ellipse(cx, y + h * 0.38, 2, 2.3, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, y + h * 0.26, 2.2, 3, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ff1c38";
   ctx.beginPath();
-  ctx.ellipse(cx, y + h * 0.38, 1, 1.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, y + h * 0.26, 1.1, 1.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // chrome wingtip lights
+  ctx.fillStyle = "#ff1c38";
+  ctx.beginPath();
+  ctx.arc(cx - w * 0.56, y + h * 0.87, 1.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + w * 0.56, y + h * 0.87, 1.3, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
