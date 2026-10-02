@@ -105,7 +105,7 @@ let enemies = [];
 let particles = [];
 let stars = [];
 let boss = null;
-let stageBanner = { text: "", timer: 0 };
+let stageBanner = { text: "", subtext: "", timer: 0 };
 let pickups = [];
 let activeRockets = [];
 let laserBeam = null;
@@ -120,9 +120,23 @@ function isBossStage(wave) {
   return wave % 5 === 0;
 }
 
+const REALM_THEMES = [
+  { name: "VIOLET VOID", bg: "#0a0510", star: "#cfc2e8", ember: "#ff8a4c" },
+  { name: "BLOOD WASTES", bg: "#1a0508", star: "#ffb3b3", ember: "#ff3030" },
+  { name: "PLAGUE MIRE", bg: "#0a140d", star: "#b9ffb0", ember: "#7fff6a" },
+  { name: "FROZEN CRYPT", bg: "#050a14", star: "#b3e0ff", ember: "#7fd4ff" },
+];
+
+function currentRealm() {
+  const tier = Math.floor((state.wave - 1) / 5) % REALM_THEMES.length;
+  return REALM_THEMES[tier];
+}
+
 function announceStage(n) {
+  const enteringRealm = (n - 1) % 5 === 0;
   stageBanner = {
     text: isBossStage(n) ? `STAGE ${n} — BOSS` : `STAGE ${n}`,
+    subtext: enteringRealm ? currentRealm().name : "",
     timer: 120,
   };
 }
@@ -403,8 +417,8 @@ function updateHud() {
   rocketEl.textContent = `Rocket: ${player.rockets}`;
   phoenixEl.textContent =
     player.phoenixCharge > 0
-      ? `Phoenix: READY x${player.phoenixCharge}`
-      : `Phoenix: ${player.phoenixKills}/10`;
+      ? `Wraith King: READY x${player.phoenixCharge}`
+      : `Wraith King: ${player.phoenixKills}/10`;
   empEl.textContent = `EMP: ${player.empCharge}`;
 }
 
@@ -981,7 +995,7 @@ function update() {
         vx: (Math.random() - 0.5) * 1.5,
         vy: Math.random() * 2 + 1,
         life: 20 + Math.random() * 10,
-        color: Math.random() < 0.5 ? "#ff5a1f" : "#ffd166",
+        color: Math.random() < 0.5 ? "#6b4fa0" : "#b9a6ff",
       });
     }
 
@@ -989,7 +1003,7 @@ function update() {
       if (e.alive && rectsOverlap(e, player)) {
         e.alive = false;
         state.score += 10;
-        spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#ff5a1f");
+        spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#b9a6ff");
         if (Math.random() < 0.14) spawnPickup(e.x + e.w / 2, e.y + e.h / 2);
       }
     });
@@ -1152,19 +1166,19 @@ function drawPhoenixShip(x, y, w, h) {
   const t = Date.now() / 1000;
   ctx.save();
 
-  // fiery aura
+  // void aura
   const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, w * 1.5);
-  glow.addColorStop(0, "rgba(255,160,60,0.55)");
-  glow.addColorStop(1, "rgba(255,60,20,0)");
+  glow.addColorStop(0, "rgba(140,90,220,0.55)");
+  glow.addColorStop(1, "rgba(20,5,40,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
   ctx.arc(cx, cy, w * 1.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // flickering phoenix wings
+  // tattered spectral wings
   [-1, 1].forEach((side) => {
     const flick = Math.sin(t * 14 + side * 2) * 4;
-    ctx.fillStyle = "#ff5a1f";
+    ctx.fillStyle = "#3a2050";
     ctx.beginPath();
     ctx.moveTo(cx, y + h * 0.5);
     ctx.quadraticCurveTo(
@@ -1177,7 +1191,7 @@ function drawPhoenixShip(x, y, w, h) {
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = "#ffcf5c";
+    ctx.fillStyle = "#6b4fa0";
     ctx.beginPath();
     ctx.moveTo(cx, y + h * 0.5);
     ctx.quadraticCurveTo(
@@ -1190,7 +1204,7 @@ function drawPhoenixShip(x, y, w, h) {
     ctx.fill();
 
     // taloned wingtip
-    ctx.fillStyle = "#7a1f0a";
+    ctx.fillStyle = "#170c29";
     ctx.beginPath();
     ctx.moveTo(cx + side * w * 1.6, y + h * 0.75);
     ctx.lineTo(cx + side * w * 1.7, y + h * 0.82);
@@ -1199,30 +1213,46 @@ function drawPhoenixShip(x, y, w, h) {
     ctx.fill();
   });
 
-  // fiery body
-  ctx.fillStyle = "#ff7a3c";
+  // robed body
+  ctx.fillStyle = "#241233";
   ctx.beginPath();
-  ctx.moveTo(cx, y + h * 0.08);
+  ctx.moveTo(cx, y + h * 0.1);
   ctx.lineTo(cx + 6, y + h * 0.75);
   ctx.lineTo(cx, y + h * 0.6);
   ctx.lineTo(cx - 6, y + h * 0.75);
   ctx.closePath();
   ctx.fill();
 
-  // hooked beak head
-  ctx.fillStyle = "#ffcf5c";
+  // crowned skull head
+  ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
-  ctx.moveTo(cx, y);
-  ctx.lineTo(cx + 3, y + h * 0.22);
-  ctx.lineTo(cx, y + h * 0.3);
-  ctx.lineTo(cx - 3, y + h * 0.22);
+  ctx.moveTo(cx, y + h * 0.1);
+  ctx.quadraticCurveTo(cx + 4, y + h * 0.2, cx + 2.5, y + h * 0.32);
+  ctx.lineTo(cx, y + h * 0.36);
+  ctx.lineTo(cx - 2.5, y + h * 0.32);
+  ctx.quadraticCurveTo(cx - 4, y + h * 0.2, cx, y + h * 0.1);
   ctx.closePath();
   ctx.fill();
 
-  // white-hot core / eye
-  ctx.fillStyle = "#fff4cc";
+  // crown spikes
+  ctx.fillStyle = "#b9a6ff";
+  [-2.2, 0, 2.2].forEach((ox) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + ox - 1, y + h * 0.1);
+    ctx.lineTo(cx + ox, y);
+    ctx.lineTo(cx + ox + 1, y + h * 0.1);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // glowing soul eye
+  ctx.fillStyle = "#b9a6ff";
   ctx.beginPath();
-  ctx.ellipse(cx, y + h * 0.35, 3, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, y + h * 0.22, 2.6, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(cx, y + h * 0.22, 0.8, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -1824,9 +1854,13 @@ function drawPickup(p) {
 function draw() {
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
+  const realm = currentRealm();
+  ctx.fillStyle = realm.bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
   stars.forEach((s) => {
     ctx.globalAlpha = 0.5 + s.r / 3;
-    ctx.fillStyle = s.ember ? "#ff8a4c" : "#cfc2e8";
+    ctx.fillStyle = s.ember ? realm.ember : realm.star;
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
     ctx.fill();
@@ -2018,6 +2052,13 @@ function draw() {
     ctx.shadowColor = "rgba(255, 93, 115, 0.9)";
     ctx.shadowBlur = 16;
     ctx.fillText(stageBanner.text, WIDTH / 2, HEIGHT / 2 - 20);
+    if (stageBanner.subtext) {
+      ctx.font = "bold 14px monospace";
+      ctx.fillStyle = realm.star;
+      ctx.shadowColor = realm.star;
+      ctx.shadowBlur = 10;
+      ctx.fillText(stageBanner.subtext, WIDTH / 2, HEIGHT / 2 + 14);
+    }
     ctx.restore();
   }
 
@@ -2025,11 +2066,11 @@ function draw() {
     ctx.save();
     ctx.textAlign = "center";
     ctx.font = "bold 14px monospace";
-    ctx.fillStyle = "#ff5a1f";
-    ctx.shadowColor = "rgba(255, 90, 31, 0.9)";
+    ctx.fillStyle = "#b9a6ff";
+    ctx.shadowColor = "rgba(185, 166, 255, 0.9)";
     ctx.shadowBlur = 10;
     ctx.fillText(
-      `🔥 PHOENIX MODE ${Math.ceil(player.phoenixTimer / 60)}s`,
+      `👑 WRAITH KING ${Math.ceil(player.phoenixTimer / 60)}s`,
       WIDTH / 2,
       40
     );
