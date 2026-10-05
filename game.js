@@ -708,7 +708,7 @@ function fireRocket() {
 
 const GATE_CHARGE_TICKS = 30 * 72;
 const GATE_FIRE_TICKS = 216;
-const GATE_COOLDOWN_TICKS = 1080;
+const GATE_COOLDOWN_TICKS = 30 * 72;
 const GATE_WIDTH = WIDTH * 0.42;
 
 function activateGateBeam() {
@@ -2812,8 +2812,7 @@ function draw() {
       const speed = 50 + hash * 90;
       const offset = (t / speed + hash * beamHeight) % (beamHeight + 40);
       const blockH = 7 + Math.floor(hash * 10);
-      const sway = Math.sin(t / 400 + seed) * 2.5;
-      const colX = gx0 + c * colWidth + sway;
+      const colX = gx0 + c * colWidth;
 
       for (let trail = 0; trail < 4; trail++) {
         const trailY = offset - blockH - trail * (blockH * 0.85);
