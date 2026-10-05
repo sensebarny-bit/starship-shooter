@@ -605,7 +605,7 @@ function updateHud() {
       : `Wraith King: ${player.phoenixKills}/10`;
   empEl.textContent = `EMP: ${player.empCharge}`;
   if (player.gateState === "charging") {
-    gateEl.textContent = `Blood Gate: OPENING...`;
+    gateEl.textContent = `Blood Gate: OPENING ${Math.ceil(player.gateStateTimer / 72)}s`;
   } else if (player.gateState === "firing") {
     gateEl.textContent = `Blood Gate: FIRING ${Math.ceil(player.gateStateTimer / 72)}s`;
   } else if (player.gateTimer > 0) {
@@ -706,7 +706,7 @@ function fireRocket() {
   });
 }
 
-const GATE_CHARGE_TICKS = 58;
+const GATE_CHARGE_TICKS = 30 * 72;
 const GATE_FIRE_TICKS = 216;
 const GATE_COOLDOWN_TICKS = 1080;
 const GATE_WIDTH = WIDTH * 0.42;
@@ -1346,6 +1346,16 @@ function update() {
     player.gateStateTimer--;
     const gx0 = player.gateX - GATE_WIDTH / 2;
     const gx1 = player.gateX + GATE_WIDTH / 2;
+
+    // self-sustaining blood animation: ambient splatter bursts and a pooling splash,
+    // independent of whatever the beam happens to be hitting
+    if (Math.random() < 0.5) {
+      spawnBloodSplatter(gx0 + Math.random() * GATE_WIDTH, Math.random() * player.gateY, 2);
+    }
+    if (player.gateStateTimer % 6 === 0) {
+      spawnBloodSplatter(player.gateX, player.gateY, 5);
+    }
+
     enemies.forEach((e) => {
       if (e.alive && e.x < gx1 && e.x + e.w > gx0) {
         e.hp -= 1;
@@ -2802,7 +2812,8 @@ function draw() {
       const speed = 50 + hash * 90;
       const offset = (t / speed + hash * beamHeight) % (beamHeight + 40);
       const blockH = 7 + Math.floor(hash * 10);
-      const colX = gx0 + c * colWidth;
+      const sway = Math.sin(t / 400 + seed) * 2.5;
+      const colX = gx0 + c * colWidth + sway;
 
       for (let trail = 0; trail < 4; trail++) {
         const trailY = offset - blockH - trail * (blockH * 0.85);
@@ -2812,6 +2823,23 @@ function draw() {
         ctx.fillRect(colX, Math.round(trailY), colWidth - 1, blockH * (1 - trail * 0.12));
       }
     }
+
+    // pulsing blood pool where the beam lands
+    const poolPulse = 1 + Math.sin(t / 150) * 0.15;
+    const poolGlow = ctx.createRadialGradient(
+      gcx,
+      beamHeight,
+      2,
+      gcx,
+      beamHeight,
+      GATE_WIDTH * 0.4 * poolPulse
+    );
+    poolGlow.addColorStop(0, "rgba(255,28,56,0.6)");
+    poolGlow.addColorStop(1, "rgba(58,4,13,0)");
+    ctx.fillStyle = poolGlow;
+    ctx.beginPath();
+    ctx.ellipse(gcx, beamHeight, GATE_WIDTH * 0.4 * poolPulse, 10 * poolPulse, 0, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
   }
