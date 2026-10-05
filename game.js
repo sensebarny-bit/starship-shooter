@@ -605,17 +605,25 @@ function explodeRocket(x, y) {
       boss.hitFlash = 8;
     }
   }
-  const bloodShades = ["#3a040d", "#6b0a1c", "#a30f27", "#d4132f", "#ff1c38"];
-  for (let i = 0; i < 28; i++) {
+  spawnBloodSplatter(x, y, 28);
+}
+
+const BLOOD_SHADES = ["#3a040d", "#6b0a1c", "#a30f27", "#d4132f", "#ff1c38"];
+
+function spawnBloodSplatter(x, y, count) {
+  for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 4 + 1;
+    const speed = Math.random() * 4 + 0.5;
     particles.push({
       x,
       y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed + 1,
-      life: 35 + Math.random() * 10,
-      color: bloodShades[Math.floor(Math.random() * bloodShades.length)],
+      vy: Math.sin(angle) * speed * 0.6 - 0.5,
+      life: 30 + Math.random() * 20,
+      color: BLOOD_SHADES[Math.floor(Math.random() * BLOOD_SHADES.length)],
+      gravity: 0.2,
+      size: 2 + Math.random() * 2.5,
+      blood: true,
     });
   }
 }
@@ -1051,6 +1059,11 @@ function update() {
 
   if (player.gateTimer > 0) player.gateTimer--;
 
+  if (player.gateState === "charging" || player.gateState === "firing") {
+    player.gateX = player.x + player.w / 2;
+    player.gateY = player.y + player.h / 2;
+  }
+
   if (player.gateState === "charging") {
     player.gateStateTimer--;
     if (Math.random() < 0.5) {
@@ -1078,7 +1091,7 @@ function update() {
           e.alive = false;
           state.score += 10;
           addPhoenixProgress(1);
-          spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#ff1c38");
+          spawnBloodSplatter(e.x + e.w / 2, e.y + e.h / 2, 10);
           if (Math.random() < 0.14) spawnPickup(e.x + e.w / 2, e.y + e.h / 2);
         }
       }
@@ -1095,6 +1108,7 @@ function update() {
   }
 
   particles.forEach((p) => {
+    if (p.gravity) p.vy += p.gravity;
     p.x += p.vx;
     p.y += p.vy;
     p.life--;
@@ -1134,6 +1148,16 @@ function hitPlayer() {
   state.lives--;
   player.invincible = 90;
   spawnExplosion(player.x + player.w / 2, player.y + player.h / 2, "#ff5d73");
+}
+
+function drawDropShadow(x, y, w, h) {
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.ellipse(x + w / 2 + w * 0.12, y + h * 0.9, w * 0.48, h * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawPlayerShip(x, y, w, h) {
@@ -1208,6 +1232,21 @@ function drawPlayerShip(x, y, w, h) {
   ctx.lineTo(cx - 4, y + h * 0.32);
   ctx.closePath();
   ctx.fill();
+
+  // edge lighting for added dimension: bright catch-light on the left, dark shadow on the right
+  ctx.strokeStyle = "rgba(255,255,255,0.4)";
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(cx, y);
+  ctx.lineTo(cx - 4, y + h * 0.32);
+  ctx.lineTo(cx - 3, y + h * 0.84);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(0,0,0,0.45)";
+  ctx.beginPath();
+  ctx.moveTo(cx, y);
+  ctx.lineTo(cx + 4, y + h * 0.32);
+  ctx.lineTo(cx + 3, y + h * 0.84);
+  ctx.stroke();
 
   // gothic rivets along the hull seam
   ctx.fillStyle = "#17141f";
@@ -2055,10 +2094,12 @@ function draw() {
       const wy = player.y + w.offsetY - wh / 2;
       ctx.save();
       if (w.timer < 90) ctx.globalAlpha = Math.max(w.timer / 90, 0.2);
+      drawDropShadow(wx, wy, ww, wh);
       drawPlayerShip(wx, wy, ww, wh);
       ctx.restore();
     });
 
+    drawDropShadow(player.x, player.y, player.w, player.h);
     if (player.phoenixMode) {
       drawPhoenixShip(player.x, player.y, player.w, player.h);
     } else if (player.invincible <= 0 || Math.floor(player.invincible / 5) % 2 === 0) {
@@ -2117,6 +2158,7 @@ function draw() {
 
   enemies.forEach((e) => {
     if (!e.alive) return;
+    drawDropShadow(e.x, e.y, e.w, e.h);
     if (e.type === "cruiser") drawCruiser(e.x, e.y, e.w, e.h);
     else if (e.type === "stalker") drawStalker(e.x, e.y, e.w, e.h);
     else drawEvilStarship(e.x, e.y, e.w, e.h);
@@ -2131,6 +2173,7 @@ function draw() {
   });
 
   if (boss) {
+    drawDropShadow(boss.x, boss.y, boss.w, boss.h);
     drawBoss(boss);
     if (boss.stunTimer > 0) {
       ctx.save();
@@ -2256,7 +2299,13 @@ function draw() {
   particles.forEach((p) => {
     ctx.globalAlpha = Math.max(p.life / 40, 0);
     ctx.fillStyle = p.color;
-    ctx.fillRect(p.x, p.y, 3, 3);
+    const size = p.size || 3;
+    if (p.blood) {
+      const stretch = Math.min(8, Math.abs(p.vy) * 1.4);
+      ctx.fillRect(p.x, p.y, size, size + stretch);
+    } else {
+      ctx.fillRect(p.x, p.y, size, size);
+    }
   });
   ctx.globalAlpha = 1;
 
