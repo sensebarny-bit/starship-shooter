@@ -103,6 +103,7 @@ const player = {
   gateTimer: 0,
   gateX: 0,
   gateY: 0,
+  frozenTimer: 0,
 };
 
 let bullets = [];
@@ -161,14 +162,19 @@ function initStars() {
 }
 
 function bossTypeForWave(wave) {
+  if (wave === 15) return "plague";
+  if (wave === 20) return "frost";
   const tier = wave / 5;
   return tier % 2 === 1 ? "skull" : "ghost";
 }
 
+const BOSS_HP_MULT = { ghost: 1.25, skull: 1, plague: 1.35, frost: 1.5 };
+const BOSS_SPEED_MULT = { ghost: 1.15, skull: 1, plague: 0.9, frost: 1.05 };
+
 function spawnBoss(wave) {
   const tier = wave / 5;
   const bossType = bossTypeForWave(wave);
-  const maxHp = (70 + tier * 50) * (bossType === "ghost" ? 1.25 : 1);
+  const maxHp = (70 + tier * 50) * BOSS_HP_MULT[bossType];
   bossBombs = [];
   boss = {
     w: 100,
@@ -178,7 +184,7 @@ function spawnBoss(wave) {
     targetY: 80,
     entering: true,
     dir: 1,
-    speed: (1.5 + tier * 0.2) * (bossType === "ghost" ? 1.15 : 1),
+    speed: (1.5 + tier * 0.2) * BOSS_SPEED_MULT[bossType],
     hp: maxHp,
     maxHp,
     phase: 1,
@@ -189,6 +195,9 @@ function spawnBoss(wave) {
     patternTimer: 100,
     machineGunBurst: 0,
     machineGunCooldown: 0,
+    specialState: "idle",
+    specialTimer: 0,
+    specialCooldown: 420,
     driftPhase: Math.random() * Math.PI * 2,
     hitFlash: 0,
     stunTimer: 0,
@@ -313,6 +322,169 @@ function fireGhostMachineGunBurst() {
   boss.machineGunCooldown = 0;
 }
 
+function firePlagueSporeRing() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const count = boss.phase === 2 ? 16 : 11;
+  const speed = boss.phase === 2 ? 2.6 : 2.1;
+  for (let i = 0; i < count; i++) {
+    const angle = ((Math.PI * 2) / count) * i + boss.spinAngle;
+    enemyBullets.push({
+      x: cx - 3,
+      y: cy - 3,
+      w: 6,
+      h: 6,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: "#7fff6a",
+    });
+  }
+}
+
+function firePlaguePincerVolley() {
+  const cy = boss.y + boss.h * 0.65;
+  const targetAngle = Math.atan2(
+    player.y + player.h / 2 - cy,
+    player.x + player.w / 2 - (boss.x + boss.w / 2)
+  );
+  const speed = boss.phase === 2 ? 4.2 : 3.2;
+  [-1, 1].forEach((side) => {
+    const originX = boss.x + boss.w / 2 + side * boss.w * 0.4;
+    [-0.12, 0, 0.12].forEach((spread) => {
+      const angle = targetAngle + spread;
+      enemyBullets.push({
+        x: originX - 2,
+        y: cy,
+        w: 5,
+        h: 5,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: "#a8ff5a",
+      });
+    });
+  });
+}
+
+function spawnPlagueMaggots() {
+  const count = boss.phase === 2 ? 4 : 2;
+  for (let i = 0; i < count; i++) {
+    enemyBullets.push({
+      x: boss.x + boss.w / 2 + (Math.random() - 0.5) * boss.w * 0.6 - 2,
+      y: boss.y + boss.h * 0.7,
+      w: 5,
+      h: 5,
+      vx: (Math.random() - 0.5) * 1.5,
+      vy: Math.random() * 1 + 0.5,
+      color: "#c6ff7a",
+      homing: true,
+      homingLife: 180,
+      maxSpeed: 2.2,
+    });
+  }
+}
+
+function firePlagueEruption() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const rings = 2;
+  for (let r = 0; r < rings; r++) {
+    const count = 20;
+    const speed = 2 + r * 0.9;
+    for (let i = 0; i < count; i++) {
+      const angle = ((Math.PI * 2) / count) * i + r * 0.3;
+      enemyBullets.push({
+        x: cx - 3,
+        y: cy - 3,
+        w: 6,
+        h: 6,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: "#9eff5a",
+      });
+    }
+  }
+  spawnExplosion(cx, cy, "#7fff6a");
+  spawnExplosion(cx, cy, "#2f5a1a");
+}
+
+function fireFrostIcicleRain() {
+  const count = boss.phase === 2 ? 6 : 4;
+  for (let i = 0; i < count; i++) {
+    enemyBullets.push({
+      x: 20 + Math.random() * (WIDTH - 40),
+      y: -16,
+      w: 4,
+      h: 14,
+      vx: 0,
+      vy: boss.phase === 2 ? 4.4 : 3.4,
+      color: "#b3e0ff",
+      shape: "icicle",
+    });
+  }
+}
+
+function fireFrostScytheSweep() {
+  const cy = boss.y + boss.h * 0.6;
+  const count = 7;
+  const baseAngle = boss.dir > 0 ? -0.5 : Math.PI + 0.5;
+  const speed = boss.phase === 2 ? 4 : 3.2;
+  for (let i = 0; i < count; i++) {
+    const angle = baseAngle + (i / (count - 1)) * Math.PI * 0.6 * -boss.dir;
+    enemyBullets.push({
+      x: boss.x + boss.w / 2 - 2,
+      y: cy,
+      w: 5,
+      h: 5,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: "#7fd4ff",
+    });
+  }
+}
+
+function fireFrostBeam() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const angle = Math.atan2(
+    player.y + player.h / 2 - cy,
+    player.x + player.w / 2 - cx
+  );
+  const speed = 7;
+  for (let i = 0; i < 3; i++) {
+    enemyBullets.push({
+      x: cx - 1.5,
+      y: cy,
+      w: 3,
+      h: 10,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: "#e8f8ff",
+    });
+  }
+}
+
+function triggerFrostNova() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  player.frozenTimer = 240;
+  const count = 24;
+  const speed = 2.6;
+  for (let i = 0; i < count; i++) {
+    const angle = ((Math.PI * 2) / count) * i;
+    enemyBullets.push({
+      x: cx - 3,
+      y: cy - 3,
+      w: 6,
+      h: 6,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: "#b3e0ff",
+    });
+  }
+  spawnExplosion(cx, cy, "#b3e0ff");
+  spawnExplosion(cx, cy, "#e8f8ff");
+}
+
 function spawnWave(wave) {
   announceStage(wave);
   boss = null;
@@ -403,6 +575,7 @@ function resetGame() {
   player.gateTimer = 0;
   player.gateX = 0;
   player.gateY = 0;
+  player.frozenTimer = 0;
   bullets = [];
   enemyBullets = [];
   particles = [];
@@ -681,17 +854,18 @@ function update() {
     return;
   }
 
+  const moveSpeed = player.frozenTimer > 0 ? player.speed * 0.5 : player.speed;
   if (keys.has("ArrowLeft") || keys.has("KeyA")) {
-    player.x -= player.speed;
+    player.x -= moveSpeed;
   }
   if (keys.has("ArrowRight") || keys.has("KeyD")) {
-    player.x += player.speed;
+    player.x += moveSpeed;
   }
   if (keys.has("ArrowUp") || keys.has("KeyW")) {
-    player.y -= player.speed;
+    player.y -= moveSpeed;
   }
   if (keys.has("ArrowDown") || keys.has("KeyS")) {
-    player.y += player.speed;
+    player.y += moveSpeed;
   }
   const edgeMargin = player.phoenixMode ? 50 : 4;
   player.x = Math.max(edgeMargin, Math.min(WIDTH - player.w - edgeMargin, player.x));
@@ -699,6 +873,7 @@ function update() {
 
   if (player.cooldown > 0) player.cooldown--;
   if (player.invincible > 0) player.invincible--;
+  if (player.frozenTimer > 0) player.frozenTimer--;
   if (stageBanner.timer > 0) stageBanner.timer--;
   if (empPulse.timer > 0) empPulse.timer--;
 
@@ -820,6 +995,21 @@ function update() {
   );
 
   enemyBullets.forEach((b) => {
+    if (b.homing && b.homingLife > 0) {
+      b.homingLife--;
+      const dx = player.x + player.w / 2 - b.x;
+      const dy = player.y + player.h / 2 - b.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const turn = 0.06;
+      b.vx += (dx / dist) * turn;
+      b.vy += (dy / dist) * turn;
+      const speed = Math.hypot(b.vx, b.vy);
+      const maxSpeed = b.maxSpeed || 2.5;
+      if (speed > maxSpeed) {
+        b.vx = (b.vx / speed) * maxSpeed;
+        b.vy = (b.vy / speed) * maxSpeed;
+      }
+    }
     b.x += b.vx || 0;
     b.y += b.vy !== undefined ? b.vy : b.speed;
   });
@@ -966,6 +1156,78 @@ function update() {
               vy: Math.sin(angle) * speed,
             });
             boss.machineGunCooldown = 4;
+          }
+        }
+      } else if (boss.bossType === "plague") {
+        boss.y = boss.targetY + Math.sin(t * 0.8 + boss.driftPhase) * 6;
+
+        if (boss.specialState === "charging") {
+          boss.specialTimer--;
+          if (Math.random() < 0.6) {
+            particles.push({
+              x: boss.x + boss.w / 2 + (Math.random() - 0.5) * boss.w,
+              y: boss.y + boss.h * 0.6 + (Math.random() - 0.5) * boss.h * 0.5,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              life: 14 + Math.random() * 8,
+              color: "#9eff5a",
+            });
+          }
+          if (boss.specialTimer <= 0) {
+            firePlagueEruption();
+            boss.specialState = "idle";
+            boss.specialCooldown = 420;
+          }
+        } else {
+          boss.specialCooldown--;
+          if (boss.specialCooldown <= 0) {
+            boss.specialState = "charging";
+            boss.specialTimer = 75;
+          }
+
+          boss.patternTimer--;
+          if (boss.patternTimer <= 0) {
+            boss.patternIndex = (boss.patternIndex + 1) % 3;
+            boss.patternTimer = boss.phase === 2 ? 70 : 100;
+            if (boss.patternIndex === 0) firePlagueSporeRing();
+            else if (boss.patternIndex === 1) firePlaguePincerVolley();
+            else spawnPlagueMaggots();
+          }
+        }
+      } else if (boss.bossType === "frost") {
+        boss.y = boss.targetY + Math.sin(t * 0.6 + boss.driftPhase) * 4;
+
+        if (boss.specialState === "charging") {
+          boss.specialTimer--;
+          if (Math.random() < 0.6) {
+            particles.push({
+              x: boss.x + boss.w / 2 + (Math.random() - 0.5) * boss.w,
+              y: boss.y + boss.h * 0.6 + (Math.random() - 0.5) * boss.h * 0.5,
+              vx: (Math.random() - 0.5) * 1.5,
+              vy: (Math.random() - 0.5) * 1.5,
+              life: 14 + Math.random() * 8,
+              color: "#b3e0ff",
+            });
+          }
+          if (boss.specialTimer <= 0) {
+            triggerFrostNova();
+            boss.specialState = "idle";
+            boss.specialCooldown = 480;
+          }
+        } else {
+          boss.specialCooldown--;
+          if (boss.specialCooldown <= 0) {
+            boss.specialState = "charging";
+            boss.specialTimer = 85;
+          }
+
+          boss.patternTimer--;
+          if (boss.patternTimer <= 0) {
+            boss.patternIndex = (boss.patternIndex + 1) % 3;
+            boss.patternTimer = boss.phase === 2 ? 60 : 85;
+            if (boss.patternIndex === 0) fireFrostIcicleRain();
+            else if (boss.patternIndex === 1) fireFrostScytheSweep();
+            else fireFrostBeam();
           }
         }
       } else {
@@ -1692,6 +1954,8 @@ function drawStalker(x, y, w, h) {
 
 function drawBoss(b) {
   if (b.bossType === "ghost") drawGhostPirateBoss(b);
+  else if (b.bossType === "plague") drawPlagueMotherBoss(b);
+  else if (b.bossType === "frost") drawFrostReaperBoss(b);
   else drawSkullBoss(b);
 }
 
@@ -1951,6 +2215,235 @@ function drawGhostPirateBoss(b) {
   drawBossHealthBar(b, "THE DROWNED HULL", accent);
 }
 
+function drawPlagueMotherBoss(b) {
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+  const angry = b.phase === 2;
+  const accent = angry ? "#ff2d4d" : "#9eff5a";
+  const t = Date.now() / 1000;
+  const pulse = 1 + Math.sin(t * 2.2) * 0.07;
+  ctx.save();
+  if (b.hitFlash > 0) ctx.globalAlpha = 0.55;
+
+  // toxic aura
+  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 1.05 * pulse);
+  glow.addColorStop(0, angry ? "rgba(255,45,77,0.5)" : "rgba(158,255,90,0.38)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, b.w * 1.05 * pulse, b.h * pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // orbiting spore motes
+  const baseAlpha = b.hitFlash > 0 ? 0.55 : 1;
+  for (let i = 0; i < 5; i++) {
+    const ang = t * 0.9 + (i * Math.PI * 2) / 5;
+    const r = b.w * 0.68;
+    const mx = cx + Math.cos(ang) * r;
+    const my = cy + Math.sin(ang) * r * 0.4;
+    ctx.globalAlpha = baseAlpha * (0.35 + 0.35 * Math.sin(t * 3 + i));
+    ctx.fillStyle = "#9eff5a";
+    ctx.beginPath();
+    ctx.arc(mx, my, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = baseAlpha;
+
+  // curved pincer appendages
+  ctx.fillStyle = "#1a2614";
+  [-1, 1].forEach((side) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + side * b.w * 0.32, cy);
+    ctx.quadraticCurveTo(
+      cx + side * b.w * 0.62,
+      cy - b.h * 0.1,
+      cx + side * b.w * 0.5,
+      cy + b.h * 0.3
+    );
+    ctx.quadraticCurveTo(cx + side * b.w * 0.42, cy + b.h * 0.2, cx + side * b.w * 0.3, cy + b.h * 0.15);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // bloated swollen body
+  const bodyGrad = ctx.createRadialGradient(cx, cy - b.h * 0.1, 5, cx, cy, b.w * 0.5);
+  bodyGrad.addColorStop(0, "#5a7a3a");
+  bodyGrad.addColorStop(0.6, "#2f4a1f");
+  bodyGrad.addColorStop(1, "#0f1a0a");
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, b.w * 0.4 * pulse, b.h * 0.42 * pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // pustule veins
+  ctx.strokeStyle = "rgba(158,255,90,0.3)";
+  ctx.lineWidth = 1;
+  [-0.2, 0.05, 0.25].forEach((ox) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + b.w * ox, cy - b.h * 0.3);
+    ctx.lineTo(cx + b.w * (ox + 0.05), cy + b.h * 0.2);
+    ctx.stroke();
+  });
+
+  // oozing pustules
+  ctx.fillStyle = "#7fbf3a";
+  [
+    [-0.18, 0.28],
+    [0.1, 0.32],
+    [0.26, 0.2],
+  ].forEach(([ox, oy]) => {
+    ctx.beginPath();
+    ctx.ellipse(cx + b.w * ox, cy + b.h * oy, 3.5, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // asymmetric cluster of glowing eyes
+  const eyes = [
+    [-0.16, -0.08, 3.2],
+    [0.1, -0.14, 2.6],
+    [0.22, 0.02, 2.2],
+    [-0.26, 0.08, 2],
+    [0.02, 0.1, 2.4],
+  ];
+  eyes.forEach(([ox, oy, r]) => {
+    ctx.fillStyle = "#0a1408";
+    ctx.beginPath();
+    ctx.arc(cx + b.w * ox, cy + b.h * oy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(cx + b.w * ox, cy + b.h * oy, r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+
+  if (b.specialState === "charging") {
+    ctx.save();
+    ctx.globalAlpha = 0.6 + Math.sin(t * 10) * 0.3;
+    ctx.fillStyle = "#9eff5a";
+    ctx.font = "bold 10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("PLAGUE ERUPTION IMMINENT", cx, b.y - 14);
+    ctx.restore();
+  }
+
+  drawBossHealthBar(b, "THE PLAGUE MOTHER", accent);
+}
+
+function drawFrostReaperBoss(b) {
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+  const angry = b.phase === 2;
+  const accent = angry ? "#ff2d4d" : "#7fd4ff";
+  const t = Date.now() / 1000;
+  const pulse = 1 + Math.sin(t * 2) * 0.05;
+  ctx.save();
+  if (b.hitFlash > 0) ctx.globalAlpha = 0.55;
+
+  // frost aura
+  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 1.1 * pulse);
+  glow.addColorStop(0, angry ? "rgba(255,45,77,0.5)" : "rgba(127,212,255,0.4)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, b.w * 1.1 * pulse, b.h * pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // drifting ice motes
+  const baseAlpha2 = b.hitFlash > 0 ? 0.55 : 1;
+  for (let i = 0; i < 4; i++) {
+    const ang = t * 0.6 + (i * Math.PI) / 2;
+    const r = b.w * 0.72;
+    const mx = cx + Math.cos(ang) * r;
+    const my = cy + Math.sin(ang) * r * 0.5 - b.h * 0.1;
+    ctx.globalAlpha = baseAlpha2 * (0.4 + 0.3 * Math.sin(t * 3 + i));
+    ctx.fillStyle = "#e8f8ff";
+    ctx.beginPath();
+    ctx.arc(mx, my, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = baseAlpha2;
+
+  // massive ice scythe blade
+  ctx.fillStyle = "#cfeeff";
+  ctx.beginPath();
+  ctx.moveTo(cx + b.w * 0.3, cy - b.h * 0.2);
+  ctx.quadraticCurveTo(cx + b.w * 0.75, cy - b.h * 0.5, cx + b.w * 0.62, cy + b.h * 0.1);
+  ctx.quadraticCurveTo(cx + b.w * 0.5, cy + b.h * 0.05, cx + b.w * 0.34, cy - b.h * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(127,212,255,0.6)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // tattered icy cloak, sharp crystalline hem
+  ctx.fillStyle = "#16222c";
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.4, cy + b.h * 0.05);
+  ctx.lineTo(cx - b.w * 0.44, cy - b.h * 0.25);
+  ctx.lineTo(cx - b.w * 0.18, cy - b.h * 0.42);
+  ctx.lineTo(cx, cy - b.h * 0.3);
+  ctx.lineTo(cx + b.w * 0.18, cy - b.h * 0.42);
+  ctx.lineTo(cx + b.w * 0.3, cy - b.h * 0.22);
+  ctx.lineTo(cx + b.w * 0.24, cy + b.h * 0.08);
+  ctx.lineTo(cx + b.w * 0.1, cy + b.h * 0.4);
+  ctx.lineTo(cx - b.w * 0.08, cy + b.h * 0.22);
+  ctx.lineTo(cx - b.w * 0.22, cy + b.h * 0.42);
+  ctx.closePath();
+  ctx.fill();
+
+  // crystalline rim light on the cloak's crown
+  ctx.strokeStyle = "rgba(200,240,255,0.4)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.18, cy - b.h * 0.42);
+  ctx.lineTo(cx, cy - b.h * 0.3);
+  ctx.lineTo(cx + b.w * 0.18, cy - b.h * 0.42);
+  ctx.stroke();
+
+  // gaunt skull face
+  ctx.fillStyle = "#e8f0f4";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - b.h * 0.32);
+  ctx.quadraticCurveTo(cx + b.w * 0.13, cy - b.h * 0.26, cx + b.w * 0.1, cy - b.h * 0.08);
+  ctx.lineTo(cx, cy + b.h * 0.02);
+  ctx.lineTo(cx - b.w * 0.1, cy - b.h * 0.08);
+  ctx.quadraticCurveTo(cx - b.w * 0.13, cy - b.h * 0.26, cx, cy - b.h * 0.32);
+  ctx.closePath();
+  ctx.fill();
+
+  // hollow glowing eyes
+  ctx.fillStyle = "#0a1420";
+  ctx.beginPath();
+  ctx.ellipse(cx - b.w * 0.05, cy - b.h * 0.18, b.w * 0.035, b.h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + b.w * 0.05, cy - b.h * 0.18, b.w * 0.035, b.h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  ctx.arc(cx - b.w * 0.05, cy - b.h * 0.18, b.w * 0.016 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + b.w * 0.05, cy - b.h * 0.18, b.w * 0.016 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  if (b.specialState === "charging") {
+    ctx.save();
+    ctx.globalAlpha = 0.6 + Math.sin(t * 10) * 0.3;
+    ctx.fillStyle = "#7fd4ff";
+    ctx.font = "bold 10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("ABSOLUTE ZERO IMMINENT", cx, b.y - 14);
+    ctx.restore();
+  }
+
+  drawBossHealthBar(b, "THE FROST REAPER", accent);
+}
+
 const PICKUP_STYLE = {
   laser: { color: "#b9a6ff", glow: "rgba(185,166,255,0.55)" },
   rocket: { color: "#ffb347", glow: "rgba(255,179,71,0.55)" },
@@ -2105,6 +2598,23 @@ function draw() {
     } else if (player.invincible <= 0 || Math.floor(player.invincible / 5) % 2 === 0) {
       drawPlayerShip(player.x, player.y, player.w, player.h);
     }
+    if (player.frozenTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.35 + Math.sin(Date.now() / 150) * 0.15;
+      ctx.fillStyle = "#b3e0ff";
+      ctx.beginPath();
+      ctx.ellipse(
+        player.x + player.w / 2,
+        player.y + player.h / 2,
+        player.w * 0.7,
+        player.h * 0.7,
+        0,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   bullets.forEach((b) => {
@@ -2139,20 +2649,30 @@ function draw() {
     const cx = b.x + b.w / 2;
     const cy = b.y + b.h / 2;
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(Date.now() / 300);
-    ctx.fillStyle = "#7a0f1f";
-    ctx.beginPath();
-    ctx.moveTo(0, -4);
-    ctx.lineTo(4, 0);
-    ctx.lineTo(0, 4);
-    ctx.lineTo(-4, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#ff2d4d";
-    ctx.beginPath();
-    ctx.arc(0, 0, 1.4, 0, Math.PI * 2);
-    ctx.fill();
+    if (b.shape === "icicle") {
+      ctx.fillStyle = b.color || "#b3e0ff";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + b.h / 2);
+      ctx.lineTo(cx + b.w / 2, cy - b.h / 2);
+      ctx.lineTo(cx - b.w / 2, cy - b.h / 2);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.translate(cx, cy);
+      ctx.rotate(Date.now() / 300);
+      ctx.fillStyle = b.color ? b.color + "66" : "#7a0f1f";
+      ctx.beginPath();
+      ctx.moveTo(0, -4);
+      ctx.lineTo(4, 0);
+      ctx.lineTo(0, 4);
+      ctx.lineTo(-4, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = b.color || "#ff2d4d";
+      ctx.beginPath();
+      ctx.arc(0, 0, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   });
 
