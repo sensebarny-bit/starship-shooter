@@ -855,17 +855,29 @@ function update() {
   }
 
   const moveSpeed = player.frozenTimer > 0 ? player.speed * 0.5 : player.speed;
-  if (keys.has("ArrowLeft") || keys.has("KeyA")) {
-    player.x -= moveSpeed;
-  }
-  if (keys.has("ArrowRight") || keys.has("KeyD")) {
-    player.x += moveSpeed;
-  }
-  if (keys.has("ArrowUp") || keys.has("KeyW")) {
-    player.y -= moveSpeed;
-  }
-  if (keys.has("ArrowDown") || keys.has("KeyS")) {
-    player.y += moveSpeed;
+  if (player.phoenixMode) {
+    // Wraith King: movement is automated, homing in on the nearest enemy or boss
+    const target = findNearestTarget(player.x + player.w / 2, player.y + player.h / 2);
+    if (target) {
+      const dx = target.x - (player.x + player.w / 2);
+      const dy = target.y - (player.y + player.h / 2);
+      const dist = Math.hypot(dx, dy) || 1;
+      player.x += (dx / dist) * moveSpeed * 1.4;
+      player.y += (dy / dist) * moveSpeed * 1.4;
+    }
+  } else {
+    if (keys.has("ArrowLeft") || keys.has("KeyA")) {
+      player.x -= moveSpeed;
+    }
+    if (keys.has("ArrowRight") || keys.has("KeyD")) {
+      player.x += moveSpeed;
+    }
+    if (keys.has("ArrowUp") || keys.has("KeyW")) {
+      player.y -= moveSpeed;
+    }
+    if (keys.has("ArrowDown") || keys.has("KeyS")) {
+      player.y += moveSpeed;
+    }
   }
   const edgeMargin = player.phoenixMode ? 50 : 4;
   player.x = Math.max(edgeMargin, Math.min(WIDTH - player.w - edgeMargin, player.x));
