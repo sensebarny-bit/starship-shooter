@@ -169,12 +169,13 @@ function initStars() {
 function bossTypeForWave(wave) {
   if (wave === 15) return "plague";
   if (wave === 20) return "frost";
+  if (wave === 25) return "hellfire";
   const tier = wave / 5;
   return tier % 2 === 1 ? "skull" : "ghost";
 }
 
-const BOSS_HP_MULT = { ghost: 1.25, skull: 1, plague: 1.35, frost: 1.5 };
-const BOSS_SPEED_MULT = { ghost: 1.15, skull: 1, plague: 0.9, frost: 1.05 };
+const BOSS_HP_MULT = { ghost: 1.25, skull: 1, plague: 1.35, frost: 1.5, hellfire: 1.7 };
+const BOSS_SPEED_MULT = { ghost: 1.15, skull: 1, plague: 0.9, frost: 1.05, hellfire: 1.15 };
 
 function spawnBoss(wave) {
   const tier = wave / 5;
@@ -490,6 +491,99 @@ function triggerFrostNova() {
   spawnExplosion(cx, cy, "#e8f8ff");
 }
 
+function fireHellfireMeteorRain() {
+  const count = boss.phase === 2 ? 7 : 5;
+  for (let i = 0; i < count; i++) {
+    enemyBullets.push({
+      x: 20 + Math.random() * (WIDTH - 40),
+      y: -16,
+      w: 8,
+      h: 8,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: boss.phase === 2 ? 4.2 : 3.2,
+      shape: "meteor",
+    });
+  }
+}
+
+function fireHellfireRingBurst() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const count = 16;
+  const speed = boss.phase === 2 ? 3 : 2.3;
+  for (let i = 0; i < count; i++) {
+    const angle = ((Math.PI * 2) / count) * i + boss.spinAngle;
+    enemyBullets.push({
+      x: cx - 3,
+      y: cy - 3,
+      w: 6,
+      h: 6,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: "#ff6a1f",
+    });
+  }
+  boss.spinAngle += 0.3;
+}
+
+function fireHellfireEmberVolley() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const angle = Math.atan2(
+    player.y + player.h / 2 - cy,
+    player.x + player.w / 2 - cx
+  );
+  const speed = boss.phase === 2 ? 6.4 : 5.2;
+  const spread = 0.22;
+  for (let i = -2; i <= 2; i++) {
+    const a = angle + i * spread;
+    enemyBullets.push({
+      x: cx - 2,
+      y: cy - 2,
+      w: 4,
+      h: 4,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      color: "#ffb347",
+    });
+  }
+}
+
+function triggerHellfireApocalypse() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const rings = 3;
+  for (let r = 0; r < rings; r++) {
+    const count = 18;
+    const speed = 2.2 + r * 1.1;
+    for (let i = 0; i < count; i++) {
+      const angle = ((Math.PI * 2) / count) * i + r * 0.2;
+      enemyBullets.push({
+        x: cx - 3,
+        y: cy - 3,
+        w: 6,
+        h: 6,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: r === 0 ? "#ffd23f" : r === 1 ? "#ff6a1f" : "#c21030",
+      });
+    }
+  }
+  for (let i = 0; i < 6; i++) {
+    enemyBullets.push({
+      x: 20 + Math.random() * (WIDTH - 40),
+      y: -16,
+      w: 8,
+      h: 8,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: 4.6,
+      shape: "meteor",
+    });
+  }
+  spawnExplosion(cx, cy, "#ff6a1f");
+  spawnExplosion(cx, cy, "#ffd23f");
+}
+
 function spawnWave(wave) {
   announceStage(wave);
   boss = null;
@@ -612,7 +706,7 @@ function updateHud() {
   phoenixEl.textContent =
     player.phoenixCharge > 0
       ? `Wraith King: READY x${player.phoenixCharge}`
-      : `Wraith King: ${player.phoenixKills}/10`;
+      : `Wraith King: ${player.phoenixKills}/${PHOENIX_KILLS_REQUIRED}`;
   empEl.textContent = `EMP: ${player.empCharge}`;
   if (player.gateState === "charging") {
     gateEl.textContent = `Blood Gate: OPENING ${Math.ceil(player.gateStateTimer / 72)}s`;
@@ -730,6 +824,7 @@ function activateGateBeam() {
 }
 
 const PHOENIX_RETURN_TICKS = 90;
+const PHOENIX_CONTACT_DAMAGE = 2; // halved from the original instant-kill/4-dmg contact hit
 
 function activatePhoenix() {
   player.phoenixCharge--;
@@ -757,10 +852,12 @@ function activateEmp() {
   checkBossDefeat();
 }
 
+const PHOENIX_KILLS_REQUIRED = 25;
+
 function addPhoenixProgress(amount) {
   player.phoenixKills += amount;
-  while (player.phoenixKills >= 10) {
-    player.phoenixKills -= 10;
+  while (player.phoenixKills >= PHOENIX_KILLS_REQUIRED) {
+    player.phoenixKills -= PHOENIX_KILLS_REQUIRED;
     player.phoenixCharge = Math.min(player.phoenixCharge + 1, 3);
   }
 }
@@ -1271,6 +1368,42 @@ function update() {
             else fireFrostBeam();
           }
         }
+      } else if (boss.bossType === "hellfire") {
+        boss.y = boss.targetY + Math.sin(t * 1.3 + boss.driftPhase) * 8;
+
+        if (boss.specialState === "charging") {
+          boss.specialTimer--;
+          if (Math.random() < 0.7) {
+            particles.push({
+              x: boss.x + boss.w / 2 + (Math.random() - 0.5) * boss.w,
+              y: boss.y + boss.h * 0.6 + (Math.random() - 0.5) * boss.h * 0.5,
+              vx: (Math.random() - 0.5) * 2,
+              vy: -Math.random() * 2 - 0.5,
+              life: 14 + Math.random() * 8,
+              color: Math.random() < 0.5 ? "#ff6a1f" : "#ffd23f",
+            });
+          }
+          if (boss.specialTimer <= 0) {
+            triggerHellfireApocalypse();
+            boss.specialState = "idle";
+            boss.specialCooldown = 450;
+          }
+        } else {
+          boss.specialCooldown--;
+          if (boss.specialCooldown <= 0) {
+            boss.specialState = "charging";
+            boss.specialTimer = 80;
+          }
+
+          boss.patternTimer--;
+          if (boss.patternTimer <= 0) {
+            boss.patternIndex = (boss.patternIndex + 1) % 3;
+            boss.patternTimer = boss.phase === 2 ? 65 : 95;
+            if (boss.patternIndex === 0) fireHellfireMeteorRain();
+            else if (boss.patternIndex === 1) fireHellfireRingBurst();
+            else fireHellfireEmberVolley();
+          }
+        }
       } else {
         boss.spinAngle += boss.phase === 2 ? 0.16 : 0.1;
 
@@ -1346,15 +1479,18 @@ function update() {
 
     enemies.forEach((e) => {
       if (e.alive && rectsOverlap(e, player)) {
-        e.alive = false;
-        state.score += 10;
-        spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#b9a6ff");
-        if (Math.random() < 0.14) spawnPickup(e.x + e.w / 2, e.y + e.h / 2);
+        e.hp -= PHOENIX_CONTACT_DAMAGE;
+        if (e.hp <= 0) {
+          e.alive = false;
+          state.score += 10;
+          spawnExplosion(e.x + e.w / 2, e.y + e.h / 2, "#b9a6ff");
+          if (Math.random() < 0.14) spawnPickup(e.x + e.w / 2, e.y + e.h / 2);
+        }
       }
     });
 
     if (boss && !boss.entering && rectsOverlap(boss, player)) {
-      boss.hp -= 4;
+      boss.hp -= PHOENIX_CONTACT_DAMAGE;
       boss.hitFlash = 4;
     }
     checkBossDefeat();
@@ -2118,6 +2254,7 @@ function drawBoss(b) {
   if (b.bossType === "ghost") drawGhostPirateBoss(b);
   else if (b.bossType === "plague") drawPlagueMotherBoss(b);
   else if (b.bossType === "frost") drawFrostReaperBoss(b);
+  else if (b.bossType === "hellfire") drawCinderlordBoss(b);
   else drawSkullBoss(b);
 }
 
@@ -2678,6 +2815,142 @@ function drawFrostReaperBoss(b) {
   drawBossHealthBar(b, "THE FROST REAPER", accent);
 }
 
+function drawCinderlordBoss(b) {
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+  const angry = b.phase === 2;
+  const accent = angry ? "#ffd23f" : "#ff6a1f";
+  const t = Date.now() / 1000;
+  const pulse = 1 + Math.sin(t * 3) * 0.06;
+  ctx.save();
+  if (b.hitFlash > 0) ctx.globalAlpha = 0.55;
+
+  // roiling heat aura
+  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 1.15 * pulse);
+  glow.addColorStop(0, angry ? "rgba(255,210,63,0.55)" : "rgba(255,106,31,0.45)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, b.w * 1.15 * pulse, b.h * pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // rising embers
+  const baseAlpha = b.hitFlash > 0 ? 0.55 : 1;
+  for (let i = 0; i < 6; i++) {
+    const seed = i * 1.7;
+    const ex = cx + Math.sin(t * 1.4 + seed) * b.w * 0.5;
+    const ey = cy + b.h * 0.4 - ((t * 40 + seed * 80) % (b.h * 1.3));
+    ctx.globalAlpha = baseAlpha * (0.3 + 0.4 * Math.sin(t * 5 + seed));
+    ctx.fillStyle = i % 2 === 0 ? "#ffd23f" : "#ff6a1f";
+    ctx.beginPath();
+    ctx.arc(ex, ey, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = baseAlpha;
+
+  // tattered flame-licked cape
+  ctx.fillStyle = "#1a0f0a";
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.42, cy + b.h * 0.1);
+  ctx.lineTo(cx - b.w * 0.46, cy - b.h * 0.22);
+  ctx.lineTo(cx - b.w * 0.28, cy - b.h * 0.1);
+  ctx.lineTo(cx - b.w * 0.2, cy - b.h * 0.38);
+  ctx.lineTo(cx - b.w * 0.05, cy - b.h * 0.12);
+  ctx.lineTo(cx, cy - b.h * 0.34);
+  ctx.lineTo(cx + b.w * 0.05, cy - b.h * 0.12);
+  ctx.lineTo(cx + b.w * 0.2, cy - b.h * 0.38);
+  ctx.lineTo(cx + b.w * 0.28, cy - b.h * 0.1);
+  ctx.lineTo(cx + b.w * 0.46, cy - b.h * 0.22);
+  ctx.lineTo(cx + b.w * 0.42, cy + b.h * 0.1);
+  ctx.lineTo(cx + b.w * 0.22, cy + b.h * 0.44);
+  ctx.lineTo(cx + b.w * 0.1, cy + b.h * 0.22);
+  ctx.lineTo(cx, cy + b.h * 0.46);
+  ctx.lineTo(cx - b.w * 0.1, cy + b.h * 0.22);
+  ctx.lineTo(cx - b.w * 0.22, cy + b.h * 0.44);
+  ctx.closePath();
+  ctx.fill();
+
+  // glowing magma cracks through the cape
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 0.8;
+  ctx.globalAlpha = baseAlpha * (0.6 + Math.sin(t * 4) * 0.3);
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.26, cy - b.h * 0.05);
+  ctx.lineTo(cx - b.w * 0.14, cy + b.h * 0.1);
+  ctx.lineTo(cx - b.w * 0.2, cy + b.h * 0.3);
+  ctx.moveTo(cx + b.w * 0.26, cy - b.h * 0.05);
+  ctx.lineTo(cx + b.w * 0.14, cy + b.h * 0.1);
+  ctx.lineTo(cx + b.w * 0.2, cy + b.h * 0.3);
+  ctx.stroke();
+  ctx.globalAlpha = baseAlpha;
+
+  // curved charred horns
+  ctx.fillStyle = "#120a08";
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.08, cy - b.h * 0.3);
+  ctx.quadraticCurveTo(cx - b.w * 0.26, cy - b.h * 0.5, cx - b.w * 0.2, cy - b.h * 0.6);
+  ctx.quadraticCurveTo(cx - b.w * 0.14, cy - b.h * 0.46, cx - b.w * 0.02, cy - b.h * 0.3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + b.w * 0.08, cy - b.h * 0.3);
+  ctx.quadraticCurveTo(cx + b.w * 0.26, cy - b.h * 0.5, cx + b.w * 0.2, cy - b.h * 0.6);
+  ctx.quadraticCurveTo(cx + b.w * 0.14, cy - b.h * 0.46, cx + b.w * 0.02, cy - b.h * 0.3);
+  ctx.closePath();
+  ctx.fill();
+
+  // demonic skull face
+  ctx.fillStyle = "#2b1810";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - b.h * 0.32);
+  ctx.quadraticCurveTo(cx + b.w * 0.14, cy - b.h * 0.26, cx + b.w * 0.11, cy - b.h * 0.06);
+  ctx.lineTo(cx, cy + b.h * 0.04);
+  ctx.lineTo(cx - b.w * 0.11, cy - b.h * 0.06);
+  ctx.quadraticCurveTo(cx - b.w * 0.14, cy - b.h * 0.26, cx, cy - b.h * 0.32);
+  ctx.closePath();
+  ctx.fill();
+
+  // hollow glowing eye sockets
+  ctx.fillStyle = "#0a0503";
+  ctx.beginPath();
+  ctx.ellipse(cx - b.w * 0.05, cy - b.h * 0.18, b.w * 0.035, b.h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + b.w * 0.05, cy - b.h * 0.18, b.w * 0.035, b.h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  ctx.arc(cx - b.w * 0.05, cy - b.h * 0.18, b.w * 0.018 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + b.w * 0.05, cy - b.h * 0.18, b.w * 0.018 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  // molten furnace core at the chest
+  const coreGrad = ctx.createRadialGradient(cx, cy + b.h * 0.2, 1, cx, cy + b.h * 0.2, b.w * 0.09 * pulse);
+  coreGrad.addColorStop(0, "#fff3c2");
+  coreGrad.addColorStop(0.5, "#ffd23f");
+  coreGrad.addColorStop(1, "rgba(255,106,31,0)");
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy + b.h * 0.2, b.w * 0.09 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  if (b.specialState === "charging") {
+    ctx.save();
+    ctx.globalAlpha = 0.6 + Math.sin(t * 10) * 0.3;
+    ctx.fillStyle = "#ff6a1f";
+    ctx.font = "bold 10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("THE SKY IS BURNING", cx, b.y - 14);
+    ctx.restore();
+  }
+
+  drawBossHealthBar(b, "THE CINDERLORD", accent);
+}
+
 const PICKUP_STYLE = {
   laser: { color: "#b9a6ff", glow: "rgba(185,166,255,0.55)" },
   rocket: { color: "#ffb347", glow: "rgba(255,179,71,0.55)" },
@@ -2913,6 +3186,22 @@ function draw() {
       ctx.lineTo(cx + b.w / 2, cy - b.h / 2);
       ctx.lineTo(cx - b.w / 2, cy - b.h / 2);
       ctx.closePath();
+      ctx.fill();
+    } else if (b.shape === "meteor") {
+      ctx.fillStyle = "rgba(255,120,20,0.35)";
+      ctx.beginPath();
+      ctx.moveTo(cx - b.w * 0.4, cy - b.h * 0.9);
+      ctx.lineTo(cx + b.w * 0.4, cy - b.h * 0.9);
+      ctx.lineTo(cx, cy - b.h * 2.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#ff5a1f";
+      ctx.beginPath();
+      ctx.arc(cx, cy, b.w * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffd23f";
+      ctx.beginPath();
+      ctx.arc(cx, cy, b.w * 0.28, 0, Math.PI * 2);
       ctx.fill();
     } else {
       ctx.translate(cx, cy);
