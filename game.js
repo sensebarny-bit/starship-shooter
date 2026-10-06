@@ -1321,7 +1321,7 @@ function update() {
 
   if (player.gateTimer > 0) player.gateTimer--;
 
-  if (player.gateState === "charging") {
+  if (player.gateState === "charging" || player.gateState === "firing") {
     player.gateX = player.x + player.w / 2;
     player.gateY = player.y + player.h / 2;
   }
@@ -2932,24 +2932,34 @@ function draw() {
     ctx.fillStyle = "#3a040d";
     ctx.fillRect(gx0, 0, GATE_WIDTH, beamHeight);
 
-    // chunky pixel blood columns, cascading downward with a flowing motion trail
-    const colWidth = 4;
-    const cols = Math.floor(GATE_WIDTH / colWidth);
-    for (let c = 0; c < cols; c++) {
+    // falling blood drops, teardrop-shaped with a glossy highlight
+    const dropSpacing = 7;
+    const drops = Math.floor(GATE_WIDTH / dropSpacing);
+    for (let c = 0; c < drops; c++) {
       const seed = c * 12.9898;
       const hash = Math.abs(Math.sin(seed) * 43758.5453) % 1;
       const speed = 50 + hash * 90;
-      const offset = (t / speed + hash * beamHeight) % (beamHeight + 40);
-      const blockH = 7 + Math.floor(hash * 10);
-      const colX = gx0 + c * colWidth;
+      const bulbY = (t / speed + hash * beamHeight) % (beamHeight + 40);
+      const radius = 1.6 + hash * 1.4;
+      const tailLength = 8 + hash * 12;
+      const dropX = gx0 + c * dropSpacing + dropSpacing / 2 + Math.sin(c) * 1.5;
+      const shade = bloodShades[Math.floor(hash * bloodShades.length)];
 
-      for (let trail = 0; trail < 4; trail++) {
-        const trailY = offset - blockH - trail * (blockH * 0.85);
-        const shade = bloodShades[Math.max(0, bloodShades.length - 1 - trail)];
-        ctx.globalAlpha = Math.max(0, 0.85 - trail * 0.2);
-        ctx.fillStyle = shade;
-        ctx.fillRect(colX, Math.round(trailY), colWidth - 1, blockH * (1 - trail * 0.12));
-      }
+      ctx.globalAlpha = 0.6 + hash * 0.35;
+      ctx.fillStyle = shade;
+      ctx.beginPath();
+      ctx.moveTo(dropX, bulbY - tailLength);
+      ctx.quadraticCurveTo(dropX + radius, bulbY - radius * 0.4, dropX, bulbY + radius);
+      ctx.quadraticCurveTo(dropX - radius, bulbY - radius * 0.4, dropX, bulbY - tailLength);
+      ctx.closePath();
+      ctx.fill();
+
+      // glossy highlight on the bulb
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = "#ff1c38";
+      ctx.beginPath();
+      ctx.arc(dropX - radius * 0.3, bulbY - radius * 0.2, radius * 0.35, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // rising arcane motes, drawn upward through the blood toward the rift
