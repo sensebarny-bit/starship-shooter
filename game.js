@@ -120,6 +120,7 @@ let boss = null;
 let stageBanner = { text: "", subtext: "", timer: 0 };
 let pickups = [];
 let activeRockets = [];
+let rocketBlasts = [];
 let laserBeam = null;
 let pickupSpawnTimer = 300;
 let wingmen = [];
@@ -785,6 +786,7 @@ function resetGame() {
   particles = [];
   pickups = [];
   activeRockets = [];
+  rocketBlasts = [];
   laserBeam = null;
   pickupSpawnTimer = 300;
   wingmen = [];
@@ -968,7 +970,7 @@ function spawnWingmen() {
 }
 
 function explodeRocket(x, y) {
-  const radius = 70;
+  const radius = 110;
   enemies.forEach((e) => {
     if (!e.alive) return;
     const dx = e.x + e.w / 2 - x;
@@ -990,6 +992,38 @@ function explodeRocket(x, y) {
     }
   }
   spawnBloodSplatter(x, y, 28);
+
+  // dedicated fireball + shockwave explosion animation
+  rocketBlasts.push({ x, y, radius, timer: 0, duration: 26 });
+
+  const fireColors = ["#fff3c2", "#ffd23f", "#ffb347", "#ff6a1f", "#a30f27"];
+  for (let i = 0; i < 26; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 5 + 1.5;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 24 + Math.random() * 16,
+      color: fireColors[Math.floor(Math.random() * fireColors.length)],
+      gravity: 0.08,
+      size: 1.5 + Math.random() * 2.5,
+    });
+  }
+  for (let i = 0; i < 10; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 1.2 + 0.3;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 0.6,
+      life: 40 + Math.random() * 20,
+      color: "rgba(90,90,90,0.5)",
+      size: 3 + Math.random() * 3,
+    });
+  }
 }
 
 const BLOOD_SHADES = ["#3a040d", "#6b0a1c", "#a30f27", "#d4132f", "#ff1c38"];
@@ -1710,6 +1744,9 @@ function update() {
     p.life--;
   });
   particles = particles.filter((p) => p.life > 0);
+
+  rocketBlasts.forEach((rb) => rb.timer++);
+  rocketBlasts = rocketBlasts.filter((rb) => rb.timer < rb.duration);
 
   stars.forEach((s) => {
     s.y += s.speed;
@@ -3557,6 +3594,39 @@ function draw() {
     ctx.arc(r.x + r.w / 2, r.y + r.h + 4, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#ffb347";
+  });
+
+  rocketBlasts.forEach((rb) => {
+    const progress = rb.timer / rb.duration;
+    ctx.save();
+
+    // bright fireball flash, blooms then fades
+    const flashProgress = Math.min(progress / 0.35, 1);
+    const flashR = rb.radius * 0.55 * (0.3 + flashProgress * 0.7);
+    const flashGrad = ctx.createRadialGradient(rb.x, rb.y, 0, rb.x, rb.y, flashR);
+    flashGrad.addColorStop(0, `rgba(255,243,194,${0.85 * (1 - progress)})`);
+    flashGrad.addColorStop(0.4, `rgba(255,178,71,${0.7 * (1 - progress)})`);
+    flashGrad.addColorStop(1, "rgba(255,106,31,0)");
+    ctx.fillStyle = flashGrad;
+    ctx.beginPath();
+    ctx.arc(rb.x, rb.y, flashR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // expanding shockwave ring
+    const ringR = rb.radius * progress;
+    ctx.globalAlpha = Math.max(1 - progress, 0) * 0.8;
+    ctx.strokeStyle = "#ffd23f";
+    ctx.lineWidth = Math.max(4 * (1 - progress), 0.5);
+    ctx.beginPath();
+    ctx.arc(rb.x, rb.y, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,106,31,0.5)";
+    ctx.lineWidth = Math.max(8 * (1 - progress), 0.5);
+    ctx.beginPath();
+    ctx.arc(rb.x, rb.y, ringR * 0.8, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
   });
 
   bossBombs.forEach((bomb) => {
