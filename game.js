@@ -1623,42 +1623,91 @@ function drawPhoenixShip(x, y, w, h) {
   ctx.arc(cx, cy, w * 1.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // tattered spectral wings
-  [-1, 1].forEach((side) => {
-    const flick = Math.sin(t * 14 + side * 2) * 4;
-    ctx.fillStyle = "#3a2050";
-    ctx.beginPath();
-    ctx.moveTo(cx, y + h * 0.5);
-    ctx.quadraticCurveTo(
-      cx + side * w * 1.3,
-      y + h * 0.1 + flick,
-      cx + side * w * 1.6,
-      y + h * 0.75
-    );
-    ctx.quadraticCurveTo(cx + side * w * 0.7, y + h * 0.55, cx, y + h * 0.6);
-    ctx.closePath();
-    ctx.fill();
+  // four clawed bat wings (large upper pair + smaller lower pair), each with
+  // a straight leading-edge bone and a concave, scalloped membrane trailing edge
+  const batWingSets = [
+    {
+      // large upper wings
+      originY: 0.42,
+      fingers: [
+        { x: 1.65, y: 0.02 },
+        { x: 1.5, y: 0.3 },
+        { x: 1.05, y: 0.52 },
+        { x: 0.42, y: 0.58 },
+      ],
+      flickMul: 1,
+    },
+    {
+      // small lower wings, swept back
+      originY: 0.64,
+      fingers: [
+        { x: 1.0, y: 0.46 },
+        { x: 0.88, y: 0.66 },
+        { x: 0.32, y: 0.78 },
+      ],
+      flickMul: 0.65,
+    },
+  ];
 
-    ctx.fillStyle = "#6b4fa0";
-    ctx.beginPath();
-    ctx.moveTo(cx, y + h * 0.5);
-    ctx.quadraticCurveTo(
-      cx + side * w * 0.9,
-      y + h * 0.3 + flick * 0.6,
-      cx + side * w * 1.05,
-      y + h * 0.65
-    );
-    ctx.closePath();
-    ctx.fill();
+  batWingSets.forEach((wing, setIdx) => {
+    [-1, 1].forEach((side) => {
+      const flick = Math.sin(t * 14 + side * 2 + setIdx) * 0.025 * wing.flickMul;
+      const shoulderX = cx;
+      const shoulderY = y + h * wing.originY;
+      const pts = wing.fingers.map((f) => ({
+        x: cx + side * w * f.x,
+        y: y + h * (f.y + flick),
+      }));
 
-    // taloned wingtip
-    ctx.fillStyle = "#170c29";
-    ctx.beginPath();
-    ctx.moveTo(cx + side * w * 1.6, y + h * 0.75);
-    ctx.lineTo(cx + side * w * 1.7, y + h * 0.82);
-    ctx.lineTo(cx + side * w * 1.5, y + h * 0.78);
-    ctx.closePath();
-    ctx.fill();
+      // membrane: straight leading-edge bone to the first (longest) finger,
+      // then concave scalloped dips between each subsequent finger tip
+      ctx.fillStyle = "#2a1240";
+      ctx.beginPath();
+      ctx.moveTo(shoulderX, shoulderY);
+      ctx.lineTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) {
+        const prev = pts[i - 1];
+        const cur = pts[i];
+        const dipX = shoulderX + (cur.x - shoulderX) * 0.45 + (prev.x - shoulderX) * 0.15;
+        const dipY = (prev.y + cur.y) / 2 + h * 0.05;
+        ctx.quadraticCurveTo(dipX, dipY, cur.x, cur.y);
+      }
+      ctx.lineTo(shoulderX, shoulderY + h * 0.06);
+      ctx.closePath();
+      ctx.fill();
+
+      // thin lighter venation along the leading-edge bone only
+      const veinGrad = ctx.createLinearGradient(shoulderX, shoulderY, pts[0].x, pts[0].y);
+      veinGrad.addColorStop(0, "rgba(107,79,160,0.75)");
+      veinGrad.addColorStop(1, "rgba(107,79,160,0.15)");
+      ctx.strokeStyle = veinGrad;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(shoulderX, shoulderY);
+      ctx.lineTo(pts[0].x, pts[0].y);
+      ctx.stroke();
+
+      // finger-bone struts (secondary digits)
+      ctx.strokeStyle = "rgba(23,12,41,0.9)";
+      ctx.lineWidth = 0.6;
+      for (let i = 1; i < pts.length; i++) {
+        ctx.beginPath();
+        ctx.moveTo(shoulderX, shoulderY);
+        ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+      }
+
+      // claw tips
+      ctx.fillStyle = "#170c29";
+      pts.forEach((p) => {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + side * w * 0.06, p.y + h * 0.05);
+        ctx.lineTo(p.x - side * w * 0.03, p.y + h * 0.02);
+        ctx.closePath();
+        ctx.fill();
+      });
+    });
   });
 
   // robed body
