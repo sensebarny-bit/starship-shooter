@@ -107,6 +107,7 @@ const player = {
   gateY: 0,
   gateEmberX: 0,
   gateEmberY: 0,
+  gateFireTick: 0,
   frozenTimer: 0,
 };
 
@@ -583,6 +584,7 @@ function resetGame() {
   player.gateY = 0;
   player.gateEmberX = 0;
   player.gateEmberY = 0;
+  player.gateFireTick = 0;
   player.frozenTimer = 0;
   bullets = [];
   enemyBullets = [];
@@ -1370,12 +1372,14 @@ function update() {
     if (player.gateStateTimer <= 0) {
       player.gateState = "firing";
       player.gateStateTimer = GATE_FIRE_TICKS;
+      player.gateFireTick = 0;
       // the rift itself stays put once it tears open; only the ember inside it hunts
       player.gateEmberX = player.gateX;
       player.gateEmberY = player.gateY * 0.4;
     }
   } else if (player.gateState === "firing") {
     player.gateStateTimer--;
+    player.gateFireTick++;
 
     // the rift glides smoothly to follow the player instead of snapping to them instantly
     const followX = player.x + player.w / 2;
@@ -3013,7 +3017,9 @@ function draw() {
     const gcx = player.gateX;
     const gx0 = gcx - GATE_WIDTH / 2;
     const beamHeight = player.gateY;
-    const t = Date.now();
+    // driven by simulation ticks (not wall-clock time) so the drop animation always
+    // plays on its own in lockstep with the game, never stalling or needing input to catch up
+    const t = player.gateFireTick * STEP_MS;
     const bloodShades = ["#3a040d", "#6b0a1c", "#a30f27", "#d4132f", "#ff1c38"];
 
     ctx.save();
