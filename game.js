@@ -1364,6 +1364,12 @@ function update() {
   } else if (player.gateState === "firing") {
     player.gateStateTimer--;
 
+    // the rift glides smoothly to follow the player instead of snapping to them instantly
+    const followX = player.x + player.w / 2;
+    const followY = player.y + player.h / 2;
+    player.gateX += (followX - player.gateX) * 0.12;
+    player.gateY += (followY - player.gateY) * 0.12;
+
     const gx0 = player.gateX - GATE_WIDTH / 2;
     const gx1 = player.gateX + GATE_WIDTH / 2;
 
