@@ -170,12 +170,13 @@ function bossTypeForWave(wave) {
   if (wave === 15) return "plague";
   if (wave === 20) return "frost";
   if (wave === 25) return "hellfire";
+  if (wave === 30) return "volt";
   const tier = wave / 5;
   return tier % 2 === 1 ? "skull" : "ghost";
 }
 
-const BOSS_HP_MULT = { ghost: 1.25, skull: 1, plague: 1.35, frost: 1.5, hellfire: 1.7 };
-const BOSS_SPEED_MULT = { ghost: 1.15, skull: 1, plague: 0.9, frost: 1.05, hellfire: 1.15 };
+const BOSS_HP_MULT = { ghost: 1.25, skull: 1, plague: 1.35, frost: 1.5, hellfire: 1.7, volt: 1.85 };
+const BOSS_SPEED_MULT = { ghost: 1.15, skull: 1, plague: 0.9, frost: 1.05, hellfire: 1.15, volt: 1.3 };
 
 function spawnBoss(wave) {
   const tier = wave / 5;
@@ -584,6 +585,105 @@ function triggerHellfireApocalypse() {
   spawnExplosion(cx, cy, "#ffd23f");
 }
 
+function fireVoltChainBolt() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const angle = Math.atan2(
+    player.y + player.h / 2 - cy,
+    player.x + player.w / 2 - cx
+  );
+  const speed = boss.phase === 2 ? 7.4 : 6;
+  for (let i = 0; i < 3; i++) {
+    enemyBullets.push({
+      x: cx - 2,
+      y: cy - 2,
+      w: 3,
+      h: 6,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      shape: "bolt",
+    });
+  }
+}
+
+function fireVoltRingDischarge() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const count = 18;
+  const speed = boss.phase === 2 ? 3.2 : 2.4;
+  for (let i = 0; i < count; i++) {
+    const angle = ((Math.PI * 2) / count) * i + boss.spinAngle;
+    enemyBullets.push({
+      x: cx - 3,
+      y: cy - 3,
+      w: 5,
+      h: 5,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: i % 2 === 0 ? "#7df9ff" : "#fff066",
+    });
+  }
+  boss.spinAngle += 0.35;
+}
+
+function fireVoltArcSpray() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const angle = Math.atan2(
+    player.y + player.h / 2 - cy,
+    player.x + player.w / 2 - cx
+  );
+  const speed = boss.phase === 2 ? 6 : 4.8;
+  const spread = 0.26;
+  for (let i = -3; i <= 3; i++) {
+    const a = angle + i * spread + (Math.random() - 0.5) * 0.08;
+    enemyBullets.push({
+      x: cx - 2,
+      y: cy - 2,
+      w: 4,
+      h: 4,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      color: "#5ad1ff",
+    });
+  }
+}
+
+function triggerVoltOverload() {
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h * 0.6;
+  const rings = 2;
+  for (let r = 0; r < rings; r++) {
+    const count = 22;
+    const speed = 2.6 + r * 1.3;
+    for (let i = 0; i < count; i++) {
+      const angle = ((Math.PI * 2) / count) * i + r * 0.25;
+      enemyBullets.push({
+        x: cx - 3,
+        y: cy - 3,
+        w: 5,
+        h: 5,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: r === 0 ? "#7df9ff" : "#fff066",
+      });
+    }
+  }
+  for (let i = 0; i < 5; i++) {
+    enemyBullets.push({
+      x: 30 + Math.random() * (WIDTH - 60),
+      y: -16,
+      w: 3,
+      h: 10,
+      vx: 0,
+      vy: 7.5,
+      shape: "bolt",
+    });
+  }
+  spawnExplosion(cx, cy, "#7df9ff");
+  spawnExplosion(cx, cy, "#fff066");
+}
+
 function spawnWave(wave) {
   announceStage(wave);
   boss = null;
@@ -824,7 +924,7 @@ function activateGateBeam() {
 }
 
 const PHOENIX_RETURN_TICKS = 90;
-const PHOENIX_CONTACT_DAMAGE = 2; // halved from the original instant-kill/4-dmg contact hit
+const PHOENIX_CONTACT_DAMAGE = 0.5; // reduced 4x from the prior 2-dmg contact hit
 
 function activatePhoenix() {
   player.phoenixCharge--;
@@ -1402,6 +1502,42 @@ function update() {
             if (boss.patternIndex === 0) fireHellfireMeteorRain();
             else if (boss.patternIndex === 1) fireHellfireRingBurst();
             else fireHellfireEmberVolley();
+          }
+        }
+      } else if (boss.bossType === "volt") {
+        boss.y = boss.targetY + Math.sin(t * 2.2 + boss.driftPhase) * 5;
+
+        if (boss.specialState === "charging") {
+          boss.specialTimer--;
+          if (Math.random() < 0.75) {
+            particles.push({
+              x: boss.x + boss.w / 2 + (Math.random() - 0.5) * boss.w,
+              y: boss.y + boss.h * 0.6 + (Math.random() - 0.5) * boss.h * 0.5,
+              vx: (Math.random() - 0.5) * 2.5,
+              vy: (Math.random() - 0.5) * 2.5,
+              life: 10 + Math.random() * 6,
+              color: Math.random() < 0.5 ? "#7df9ff" : "#fff066",
+            });
+          }
+          if (boss.specialTimer <= 0) {
+            triggerVoltOverload();
+            boss.specialState = "idle";
+            boss.specialCooldown = 420;
+          }
+        } else {
+          boss.specialCooldown--;
+          if (boss.specialCooldown <= 0) {
+            boss.specialState = "charging";
+            boss.specialTimer = 70;
+          }
+
+          boss.patternTimer--;
+          if (boss.patternTimer <= 0) {
+            boss.patternIndex = (boss.patternIndex + 1) % 3;
+            boss.patternTimer = boss.phase === 2 ? 55 : 80;
+            if (boss.patternIndex === 0) fireVoltChainBolt();
+            else if (boss.patternIndex === 1) fireVoltRingDischarge();
+            else fireVoltArcSpray();
           }
         }
       } else {
@@ -2255,6 +2391,7 @@ function drawBoss(b) {
   else if (b.bossType === "plague") drawPlagueMotherBoss(b);
   else if (b.bossType === "frost") drawFrostReaperBoss(b);
   else if (b.bossType === "hellfire") drawCinderlordBoss(b);
+  else if (b.bossType === "volt") drawStormlordBoss(b);
   else drawSkullBoss(b);
 }
 
@@ -2951,6 +3088,143 @@ function drawCinderlordBoss(b) {
   drawBossHealthBar(b, "THE CINDERLORD", accent);
 }
 
+function drawStormlordBoss(b) {
+  const cx = b.x + b.w / 2;
+  const cy = b.y + b.h / 2;
+  const angry = b.phase === 2;
+  const accent = angry ? "#fff066" : "#7df9ff";
+  const t = Date.now() / 1000;
+  const pulse = 1 + Math.sin(t * 6) * 0.05;
+  ctx.save();
+  if (b.hitFlash > 0) ctx.globalAlpha = 0.55;
+
+  // charged storm aura
+  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 1.1 * pulse);
+  glow.addColorStop(0, angry ? "rgba(255,240,102,0.5)" : "rgba(125,249,255,0.4)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, b.w * 1.1 * pulse, b.h * pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // orbiting charge orbs
+  const baseAlpha = b.hitFlash > 0 ? 0.55 : 1;
+  for (let i = 0; i < 3; i++) {
+    const ang = t * 2.4 + (i * Math.PI * 2) / 3;
+    const r = b.w * 0.62;
+    const ox = cx + Math.cos(ang) * r;
+    const oy = cy + Math.sin(ang) * r * 0.45 - b.h * 0.05;
+    ctx.globalAlpha = baseAlpha * (0.6 + 0.4 * Math.sin(t * 8 + i));
+    ctx.fillStyle = "#fff066";
+    ctx.beginPath();
+    ctx.arc(ox, oy, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = baseAlpha;
+
+  // storm-cloud cloak with a jagged lightning-bolt hem
+  ctx.fillStyle = "#0d1a24";
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.4, cy + b.h * 0.05);
+  ctx.lineTo(cx - b.w * 0.44, cy - b.h * 0.3);
+  ctx.lineTo(cx - b.w * 0.22, cy - b.h * 0.1);
+  ctx.lineTo(cx - b.w * 0.16, cy - b.h * 0.42);
+  ctx.lineTo(cx, cy - b.h * 0.26);
+  ctx.lineTo(cx + b.w * 0.16, cy - b.h * 0.42);
+  ctx.lineTo(cx + b.w * 0.22, cy - b.h * 0.1);
+  ctx.lineTo(cx + b.w * 0.44, cy - b.h * 0.3);
+  ctx.lineTo(cx + b.w * 0.4, cy + b.h * 0.05);
+  ctx.lineTo(cx + b.w * 0.14, cy + b.h * 0.18);
+  ctx.lineTo(cx + b.w * 0.24, cy + b.h * 0.44);
+  ctx.lineTo(cx + b.w * 0.04, cy + b.h * 0.26);
+  ctx.lineTo(cx, cy + b.h * 0.46);
+  ctx.lineTo(cx - b.w * 0.04, cy + b.h * 0.26);
+  ctx.lineTo(cx - b.w * 0.24, cy + b.h * 0.44);
+  ctx.lineTo(cx - b.w * 0.14, cy + b.h * 0.18);
+  ctx.closePath();
+  ctx.fill();
+
+  // flickering arcs of lightning crawling across the cloak
+  const arcSeed = Math.floor(t * 8);
+  for (let i = 0; i < 2; i++) {
+    const r = Math.abs(Math.sin(arcSeed * 12.9898 + i * 44.7));
+    if (r < 0.5) continue;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = baseAlpha * 0.8;
+    ctx.beginPath();
+    const sx = cx + (i === 0 ? -1 : 1) * b.w * 0.3;
+    ctx.moveTo(sx, cy - b.h * 0.2);
+    ctx.lineTo(sx * 0.5 + cx * 0.5, cy);
+    ctx.lineTo(sx * 0.7 + cx * 0.3, cy + b.h * 0.22);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = baseAlpha;
+
+  // angular visor face
+  ctx.fillStyle = "#16222c";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - b.h * 0.32);
+  ctx.lineTo(cx + b.w * 0.12, cy - b.h * 0.18);
+  ctx.lineTo(cx + b.w * 0.09, cy - b.h * 0.02);
+  ctx.lineTo(cx, cy + b.h * 0.04);
+  ctx.lineTo(cx - b.w * 0.09, cy - b.h * 0.02);
+  ctx.lineTo(cx - b.w * 0.12, cy - b.h * 0.18);
+  ctx.closePath();
+  ctx.fill();
+
+  // glowing diamond eyes
+  ctx.fillStyle = accent;
+  [-1, 1].forEach((side) => {
+    ctx.save();
+    ctx.translate(cx + side * b.w * 0.05, cy - b.h * 0.17);
+    ctx.scale(1, 1.6);
+    ctx.globalAlpha = baseAlpha * pulse;
+    ctx.beginPath();
+    ctx.moveTo(0, -b.w * 0.025);
+    ctx.lineTo(b.w * 0.02, 0);
+    ctx.lineTo(0, b.w * 0.025);
+    ctx.lineTo(-b.w * 0.02, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  });
+  ctx.globalAlpha = baseAlpha;
+
+  // crackling charge core at the chest
+  const coreGrad = ctx.createRadialGradient(cx, cy + b.h * 0.2, 1, cx, cy + b.h * 0.2, b.w * 0.09 * pulse);
+  coreGrad.addColorStop(0, "#ffffff");
+  coreGrad.addColorStop(0.5, "#7df9ff");
+  coreGrad.addColorStop(1, "rgba(125,249,255,0)");
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy + b.h * 0.2, b.w * 0.09 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#fff066";
+  ctx.lineWidth = 0.6;
+  for (let i = 0; i < 4; i++) {
+    const a = (Math.PI / 2) * i + t * 4;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * b.w * 0.1, cy + b.h * 0.2 + Math.sin(a) * b.w * 0.1);
+    ctx.lineTo(cx + Math.cos(a) * b.w * 0.16, cy + b.h * 0.2 + Math.sin(a) * b.w * 0.16);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  if (b.specialState === "charging") {
+    ctx.save();
+    ctx.globalAlpha = 0.6 + Math.sin(t * 10) * 0.3;
+    ctx.fillStyle = "#7df9ff";
+    ctx.font = "bold 10px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("MAXIMUM VOLTAGE", cx, b.y - 14);
+    ctx.restore();
+  }
+
+  drawBossHealthBar(b, "THE STORMLORD", accent);
+}
+
 const PICKUP_STYLE = {
   laser: { color: "#b9a6ff", glow: "rgba(185,166,255,0.55)" },
   rocket: { color: "#ffb347", glow: "rgba(255,179,71,0.55)" },
@@ -3203,6 +3477,23 @@ function draw() {
       ctx.beginPath();
       ctx.arc(cx, cy, b.w * 0.28, 0, Math.PI * 2);
       ctx.fill();
+    } else if (b.shape === "bolt") {
+      ctx.strokeStyle = "rgba(125,249,255,0.4)";
+      ctx.lineWidth = b.w * 1.8;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - b.h * 1.4);
+      ctx.lineTo(cx - b.w, cy - b.h * 0.3);
+      ctx.lineTo(cx + b.w * 0.6, cy + b.h * 0.2);
+      ctx.lineTo(cx, cy + b.h * 1.4);
+      ctx.stroke();
+      ctx.strokeStyle = "#fff066";
+      ctx.lineWidth = b.w * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - b.h * 1.4);
+      ctx.lineTo(cx - b.w, cy - b.h * 0.3);
+      ctx.lineTo(cx + b.w * 0.6, cy + b.h * 0.2);
+      ctx.lineTo(cx, cy + b.h * 1.4);
+      ctx.stroke();
     } else {
       ctx.translate(cx, cy);
       ctx.rotate(Date.now() / 300);
