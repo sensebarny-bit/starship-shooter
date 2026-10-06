@@ -706,7 +706,7 @@ function fireRocket() {
   });
 }
 
-const GATE_CHARGE_TICKS = 30 * 72;
+const GATE_CHARGE_TICKS = 22.5 * 72;
 const GATE_FIRE_TICKS = 216;
 const GATE_COOLDOWN_TICKS = 30 * 72;
 const GATE_WIDTH = WIDTH * 0.42;
@@ -1737,14 +1737,31 @@ function drawEvilStarship(x, y, w, h) {
   ctx.closePath();
   ctx.fill();
 
-  // imp head, chin pointed down toward the player
-  ctx.fillStyle = "#17141f";
+  // imp head, chin pointed down toward the player — gradient for 3D volume
+  const impHeadGrad = ctx.createLinearGradient(cx - 4.5, y + h * 0.5, cx + 4.5, y + h);
+  impHeadGrad.addColorStop(0, "#2a2433");
+  impHeadGrad.addColorStop(0.5, "#17141f");
+  impHeadGrad.addColorStop(1, "#0a0710");
+  ctx.fillStyle = impHeadGrad;
   ctx.beginPath();
   ctx.moveTo(cx, y + h);
   ctx.lineTo(cx + 4.5, y + h * 0.5);
   ctx.lineTo(cx - 4.5, y + h * 0.5);
   ctx.closePath();
   ctx.fill();
+
+  // edge lighting: catch-light on the left, shadow on the right
+  ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(cx - 4.5, y + h * 0.5);
+  ctx.lineTo(cx, y + h);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.beginPath();
+  ctx.moveTo(cx + 4.5, y + h * 0.5);
+  ctx.lineTo(cx, y + h);
+  ctx.stroke();
 
   // twin glowing eyes
   ctx.fillStyle = "#ff2d4d";
@@ -1820,8 +1837,12 @@ function drawCruiser(x, y, w, h) {
     ctx.fill();
   });
 
-  // ribbed bone hull
-  ctx.fillStyle = "#2b2733";
+  // ribbed bone hull — gradient for 3D volume
+  const hullGrad = ctx.createLinearGradient(x + w * 0.1, y, x + w * 0.9, y + h);
+  hullGrad.addColorStop(0, "#413a4a");
+  hullGrad.addColorStop(0.5, "#2b2733");
+  hullGrad.addColorStop(1, "#16141c");
+  ctx.fillStyle = hullGrad;
   ctx.beginPath();
   ctx.moveTo(x + w * 0.1, y + h * 0.15);
   ctx.lineTo(x + w * 0.9, y + h * 0.15);
@@ -1829,6 +1850,19 @@ function drawCruiser(x, y, w, h) {
   ctx.lineTo(x + w * 0.22, y + h * 0.85);
   ctx.closePath();
   ctx.fill();
+
+  // edge lighting: catch-light on top, shadow on the bottom
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.1, y + h * 0.15);
+  ctx.lineTo(x + w * 0.9, y + h * 0.15);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.22, y + h * 0.85);
+  ctx.lineTo(x + w * 0.78, y + h * 0.85);
+  ctx.stroke();
 
   // rib struts
   ctx.strokeStyle = "rgba(222,210,195,0.25)";
@@ -1920,8 +1954,12 @@ function drawStalker(x, y, w, h) {
     ctx.stroke();
   });
 
-  // tattered cloak / diamond hull
-  ctx.fillStyle = "#241233";
+  // tattered cloak / diamond hull — gradient for 3D volume
+  const stalkerGrad = ctx.createLinearGradient(x, y, x + w, y + h * 0.78);
+  stalkerGrad.addColorStop(0, "#3a2552");
+  stalkerGrad.addColorStop(0.5, "#241233");
+  stalkerGrad.addColorStop(1, "#120a1a");
+  ctx.fillStyle = stalkerGrad;
   ctx.beginPath();
   ctx.moveTo(cx, y);
   ctx.lineTo(x + w, cy);
@@ -1929,6 +1967,19 @@ function drawStalker(x, y, w, h) {
   ctx.lineTo(x, cy);
   ctx.closePath();
   ctx.fill();
+
+  // edge lighting: catch-light on the upper-left facet, shadow on the lower-right
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(x, cy);
+  ctx.lineTo(cx, y);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.beginPath();
+  ctx.moveTo(x + w, cy);
+  ctx.lineTo(cx, y + h * 0.78);
+  ctx.stroke();
 
   // eyelid spikes
   ctx.fillStyle = "#241233";
