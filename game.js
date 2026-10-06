@@ -898,7 +898,15 @@ function spawnPickup(x, y, type) {
 
 function fireLaserBeam() {
   player.laser--;
-  laserBeam = { x: player.x + player.w / 2 - 9, width: 18, timer: 24 };
+  const cx = player.x + player.w / 2;
+  const beamW = 7;
+  const gap = 7;
+  laserBeam = {
+    xL: cx - gap / 2 - beamW,
+    xR: cx + gap / 2,
+    width: beamW,
+    timer: 24,
+  };
 }
 
 function fireRocket() {
@@ -1234,11 +1242,12 @@ function update() {
   bossBombs = bossBombs.filter((bomb) => !bomb.spent);
 
   if (laserBeam) {
-    const lx0 = laserBeam.x;
-    const lx1 = laserBeam.x + laserBeam.width;
+    const inBeams = (x, w) =>
+      (x < laserBeam.xL + laserBeam.width && x + w > laserBeam.xL) ||
+      (x < laserBeam.xR + laserBeam.width && x + w > laserBeam.xR);
     enemies.forEach((e) => {
       if (!e.alive) return;
-      if (e.x < lx1 && e.x + e.w > lx0) {
+      if (inBeams(e.x, e.w)) {
         e.hp -= 1;
         if (e.hp <= 0) {
           e.alive = false;
@@ -1249,7 +1258,7 @@ function update() {
         }
       }
     });
-    if (boss && !boss.entering && boss.x < lx1 && boss.x + boss.w > lx0) {
+    if (boss && !boss.entering && inBeams(boss.x, boss.w)) {
       boss.hp -= 2;
       boss.hitFlash = 4;
     }
@@ -3656,13 +3665,58 @@ function draw() {
 
   if (laserBeam) {
     ctx.save();
-    ctx.globalAlpha = Math.min(1, laserBeam.timer / 24) * 0.8 + 0.2;
-    const grad = ctx.createLinearGradient(laserBeam.x, 0, laserBeam.x + laserBeam.width, 0);
-    grad.addColorStop(0, "rgba(185,166,255,0)");
-    grad.addColorStop(0.5, "rgba(185,166,255,0.95)");
-    grad.addColorStop(1, "rgba(185,166,255,0)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(laserBeam.x, 0, laserBeam.width, player.y + player.h / 2);
+    const beamAlpha = Math.min(1, laserBeam.timer / 24) * 0.8 + 0.2;
+    const beamBottom = player.y + player.h / 2;
+    ctx.globalAlpha = beamAlpha;
+
+    [laserBeam.xL, laserBeam.xR].forEach((bx) => {
+      const grad = ctx.createLinearGradient(bx, 0, bx + laserBeam.width, 0);
+      grad.addColorStop(0, "rgba(185,166,255,0)");
+      grad.addColorStop(0.5, "rgba(185,166,255,0.95)");
+      grad.addColorStop(1, "rgba(185,166,255,0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(bx, 0, laserBeam.width, beamBottom);
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.fillRect(bx + laserBeam.width / 2 - 0.7, 0, 1.4, beamBottom);
+    });
+
+    // electrical sparks crawling along each beam, plus arcs jumping between the two
+    const tnow = Date.now();
+    ctx.strokeStyle = "#e9ccff";
+    ctx.lineWidth = 0.9;
+    [laserBeam.xL, laserBeam.xR].forEach((bx, bi) => {
+      const bcx = bx + laserBeam.width / 2;
+      for (let s = 0; s < 4; s++) {
+        const seed = Math.floor(tnow / 45) + bi * 97 + s * 31;
+        const r = Math.abs(Math.sin(seed * 12.9898)) % 1;
+        const y = r * beamBottom;
+        const jag = (Math.abs(Math.sin(seed * 78.233)) - 0.5) * laserBeam.width * 1.8;
+        ctx.globalAlpha = beamAlpha * (0.4 + r * 0.6);
+        ctx.beginPath();
+        ctx.moveTo(bcx, y - 5);
+        ctx.lineTo(bcx + jag, y);
+        ctx.lineTo(bcx, y + 5);
+        ctx.stroke();
+      }
+    });
+
+    // crackling arc jumping between the two beams
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 0.8;
+    for (let a = 0; a < 2; a++) {
+      const seed = Math.floor(tnow / 70) + a * 53;
+      const r = Math.abs(Math.sin(seed * 45.164)) % 1;
+      if (r < 0.45) continue;
+      const y = (0.15 + r * 0.7) * beamBottom;
+      const midY = y + (Math.sin(seed) - 0.5) * 10;
+      ctx.globalAlpha = beamAlpha * 0.85;
+      ctx.beginPath();
+      ctx.moveTo(laserBeam.xL + laserBeam.width, y);
+      ctx.lineTo((laserBeam.xL + laserBeam.width + laserBeam.xR) / 2, midY);
+      ctx.lineTo(laserBeam.xR, y);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
