@@ -903,11 +903,12 @@ const LASER_BEAM_GAP = 9;
 
 function fireLaserBeam() {
   player.laser--;
+  const beamCx = player.x + player.w / 2;
   laserBeam = {
     width: LASER_BEAM_WIDTH,
     gap: LASER_BEAM_GAP,
-    xL: 0,
-    xR: 0,
+    xL: beamCx - LASER_BEAM_GAP / 2 - LASER_BEAM_WIDTH,
+    xR: beamCx + LASER_BEAM_GAP / 2,
     timer: LASER_DURATION_TICKS,
   };
 }
