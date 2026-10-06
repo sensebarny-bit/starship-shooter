@@ -2860,7 +2860,7 @@ function draw() {
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(Math.atan2(uy, ux) + Math.PI / 2);
-    ctx.fillStyle = "rgba(185,166,255,0.35)";
+    ctx.fillStyle = "rgba(170,40,255,0.45)";
     ctx.beginPath();
     ctx.moveTo(0, -9);
     ctx.lineTo(3, 2);
@@ -2868,7 +2868,7 @@ function draw() {
     ctx.lineTo(-3, 2);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = "#e4d9ff";
+    ctx.fillStyle = "#c77dff";
     ctx.beginPath();
     ctx.moveTo(0, -7);
     ctx.lineTo(1.4, 1);
@@ -2876,6 +2876,29 @@ function draw() {
     ctx.lineTo(-1.4, 1);
     ctx.closePath();
     ctx.fill();
+    ctx.fillStyle = "#f3e0ff";
+    ctx.beginPath();
+    ctx.arc(0, -1, 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // sparking crackle around the bolt
+    const sparkSeed = Math.floor(Date.now() / 40) + Math.round(cx) * 7 + Math.round(cy) * 13;
+    ctx.strokeStyle = "#e9ccff";
+    ctx.lineWidth = 0.7;
+    for (let s = 0; s < 3; s++) {
+      const rnd = Math.abs(Math.sin(sparkSeed * 12.9898 + s * 78.233)) % 1;
+      if (rnd < 0.55) continue;
+      const angle = rnd * Math.PI * 2;
+      const len = 3 + rnd * 4;
+      const ox = Math.cos(angle) * 2;
+      const oy = Math.sin(angle) * 2;
+      ctx.globalAlpha = 0.5 + rnd * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(ox + Math.cos(angle) * len, oy + Math.sin(angle) * len);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
     ctx.restore();
   });
 
@@ -2894,7 +2917,7 @@ function draw() {
     } else {
       ctx.translate(cx, cy);
       ctx.rotate(Date.now() / 300);
-      ctx.fillStyle = b.color ? b.color + "66" : "#7a0f1f";
+      ctx.fillStyle = b.color ? b.color + "66" : "#ff2fa8";
       ctx.beginPath();
       ctx.moveTo(0, -4);
       ctx.lineTo(4, 0);
@@ -2902,7 +2925,7 @@ function draw() {
       ctx.lineTo(-4, 0);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = b.color || "#ff2d4d";
+      ctx.fillStyle = b.color || "#ffb3ec";
       ctx.beginPath();
       ctx.arc(0, 0, 1.4, 0, Math.PI * 2);
       ctx.fill();
