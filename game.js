@@ -1367,16 +1367,6 @@ function update() {
 
   if (player.gateState === "charging") {
     player.gateStateTimer--;
-    if (Math.random() < 0.5) {
-      particles.push({
-        x: player.x + player.w / 2 + (Math.random() - 0.5) * 14,
-        y: player.y - 4 - Math.random() * 10,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: -Math.random() * 1.5,
-        life: 16 + Math.random() * 8,
-        color: "#ff1c38",
-      });
-    }
     if (player.gateStateTimer <= 0) {
       player.gateState = "firing";
       player.gateStateTimer = GATE_FIRE_TICKS;
