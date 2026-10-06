@@ -103,6 +103,8 @@ const player = {
   gateTimer: 0,
   gateX: 0,
   gateY: 0,
+  gateEmberX: 0,
+  gateEmberY: 0,
   frozenTimer: 0,
 };
 
@@ -575,6 +577,8 @@ function resetGame() {
   player.gateTimer = 0;
   player.gateX = 0;
   player.gateY = 0;
+  player.gateEmberX = 0;
+  player.gateEmberY = 0;
   player.frozenTimer = 0;
   bullets = [];
   enemyBullets = [];
@@ -1353,21 +1357,24 @@ function update() {
     if (player.gateStateTimer <= 0) {
       player.gateState = "firing";
       player.gateStateTimer = GATE_FIRE_TICKS;
+      // the rift itself stays put once it tears open; only the ember inside it hunts
+      player.gateEmberX = player.gateX;
+      player.gateEmberY = player.gateY * 0.4;
     }
   } else if (player.gateState === "firing") {
     player.gateStateTimer--;
 
-    // the rift drifts on its own toward whatever is nearest, independent of player input
-    const gateTarget = findNearestTarget(player.gateX, player.gateY);
-    if (gateTarget) {
-      player.gateX += (gateTarget.x - player.gateX) * 0.07;
-      player.gateY += (gateTarget.y - player.gateY) * 0.07;
-    }
-    player.gateX = Math.max(GATE_WIDTH / 2, Math.min(WIDTH - GATE_WIDTH / 2, player.gateX));
-    player.gateY = Math.max(40, Math.min(HEIGHT, player.gateY));
-
     const gx0 = player.gateX - GATE_WIDTH / 2;
     const gx1 = player.gateX + GATE_WIDTH / 2;
+
+    // a homing ember drifts toward the nearest enemy, confined inside the stationary beam
+    const gateTarget = findNearestTarget(player.gateEmberX, player.gateEmberY);
+    if (gateTarget) {
+      const clampedTx = Math.max(gx0 + 3, Math.min(gx1 - 3, gateTarget.x));
+      const clampedTy = Math.max(6, Math.min(player.gateY - 6, gateTarget.y));
+      player.gateEmberX += (clampedTx - player.gateEmberX) * 0.08;
+      player.gateEmberY += (clampedTy - player.gateEmberY) * 0.08;
+    }
 
     // self-sustaining blood animation: ambient splatter bursts and a pooling splash,
     // independent of whatever the beam happens to be hitting
@@ -3110,6 +3117,29 @@ function draw() {
     ctx.fillStyle = poolGlow;
     ctx.beginPath();
     ctx.ellipse(gcx, beamHeight, GATE_WIDTH * 0.4 * poolPulse, 10 * poolPulse, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // homing ember: a bright red dot that hunts toward the nearest enemy within the rift
+    const emberPulse = 1 + Math.sin(t / 90) * 0.25;
+    ctx.globalAlpha = 1;
+    const emberGlow = ctx.createRadialGradient(
+      player.gateEmberX,
+      player.gateEmberY,
+      0,
+      player.gateEmberX,
+      player.gateEmberY,
+      7 * emberPulse
+    );
+    emberGlow.addColorStop(0, "#ffffff");
+    emberGlow.addColorStop(0.35, "#ff1c38");
+    emberGlow.addColorStop(1, "rgba(255,28,56,0)");
+    ctx.fillStyle = emberGlow;
+    ctx.beginPath();
+    ctx.arc(player.gateEmberX, player.gateEmberY, 7 * emberPulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(player.gateEmberX, player.gateEmberY, 1.4, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
