@@ -1321,8 +1321,9 @@ function update() {
 
   if (player.gateTimer > 0) player.gateTimer--;
 
-  if (player.gateState === "charging" || player.gateState === "firing") {
+  if (player.gateState === "charging") {
     player.gateX = player.x + player.w / 2;
+    player.gateY = player.y + player.h / 2;
   }
 
   if (player.gateState === "charging") {
@@ -2920,6 +2921,12 @@ function draw() {
 
     ctx.save();
 
+    // violet rift-boundary framing the wound
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = "#6b2fb3";
+    ctx.fillRect(gx0 - 2, 0, 2, beamHeight);
+    ctx.fillRect(gx0 + GATE_WIDTH, 0, 2, beamHeight);
+
     // dark blood-soaked wash behind everything
     ctx.globalAlpha = 0.4;
     ctx.fillStyle = "#3a040d";
@@ -2945,7 +2952,68 @@ function draw() {
       }
     }
 
-    // pulsing blood pool where the beam lands
+    // rising arcane motes, drawn upward through the blood toward the rift
+    for (let i = 0; i < 14; i++) {
+      const seed = i * 7.31 + 100;
+      const hash = Math.abs(Math.sin(seed) * 43758.5453) % 1;
+      const moteX = gx0 + hash * GATE_WIDTH;
+      const speed = 40 + hash * 60;
+      const moteY = beamHeight - ((t / speed + hash * beamHeight) % beamHeight);
+      ctx.globalAlpha = 0.4 + 0.5 * Math.abs(Math.sin(t / 200 + seed));
+      ctx.fillStyle = "#b9a6ff";
+      ctx.fillRect(Math.round(moteX), Math.round(moteY), 2, 2);
+    }
+
+    // flickering rune glyphs suspended within the rift
+    for (let i = 0; i < 3; i++) {
+      const seed = i * 19.7;
+      const hash = Math.abs(Math.sin(seed + Math.floor(t / 400)) * 43758.5453) % 1;
+      const gx = gx0 + hash * GATE_WIDTH;
+      const gy = beamHeight * (0.2 + 0.6 * ((hash * 7) % 1));
+      if (Math.sin(t / 220 + seed) > 0.5) {
+        ctx.save();
+        ctx.translate(gx, gy);
+        ctx.rotate(t / 900 + seed);
+        ctx.globalAlpha = 0.8;
+        ctx.strokeStyle = "rgba(185,166,255,0.8)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-4, 0);
+        ctx.lineTo(4, 0);
+        ctx.moveTo(0, -4);
+        ctx.lineTo(0, 4);
+        ctx.moveTo(-3, -3);
+        ctx.lineTo(3, 3);
+        ctx.moveTo(-3, 3);
+        ctx.lineTo(3, -3);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // rotating rune circle at the rift's origin
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.translate(gcx, 4);
+    ctx.rotate(t / 600);
+    ctx.strokeStyle = "rgba(185,166,255,0.7)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, GATE_WIDTH * 0.22, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8;
+      const r1 = GATE_WIDTH * 0.22;
+      const r2 = GATE_WIDTH * 0.26;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * r1, Math.sin(angle) * r1);
+      ctx.lineTo(Math.cos(angle) * r2, Math.sin(angle) * r2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // pulsing blood pool, violet-rimmed, where the beam lands
+    ctx.globalAlpha = 1;
     const poolPulse = 1 + Math.sin(t / 150) * 0.15;
     const poolGlow = ctx.createRadialGradient(
       gcx,
@@ -2956,6 +3024,7 @@ function draw() {
       GATE_WIDTH * 0.4 * poolPulse
     );
     poolGlow.addColorStop(0, "rgba(255,28,56,0.6)");
+    poolGlow.addColorStop(0.75, "rgba(107,47,179,0.25)");
     poolGlow.addColorStop(1, "rgba(58,4,13,0)");
     ctx.fillStyle = poolGlow;
     ctx.beginPath();
