@@ -898,15 +898,16 @@ function spawnPickup(x, y, type) {
 
 const LASER_DURATION_TICKS = 60;
 
+const LASER_BEAM_WIDTH = 12;
+const LASER_BEAM_GAP = 9;
+
 function fireLaserBeam() {
   player.laser--;
-  const cx = player.x + player.w / 2;
-  const beamW = 7;
-  const gap = 7;
   laserBeam = {
-    xL: cx - gap / 2 - beamW,
-    xR: cx + gap / 2,
-    width: beamW,
+    width: LASER_BEAM_WIDTH,
+    gap: LASER_BEAM_GAP,
+    xL: 0,
+    xR: 0,
     timer: LASER_DURATION_TICKS,
   };
 }
@@ -1244,6 +1245,11 @@ function update() {
   bossBombs = bossBombs.filter((bomb) => !bomb.spent);
 
   if (laserBeam) {
+    // the twin beams follow the ship as it moves while firing
+    const beamCx = player.x + player.w / 2;
+    laserBeam.xL = beamCx - laserBeam.gap / 2 - laserBeam.width;
+    laserBeam.xR = beamCx + laserBeam.gap / 2;
+
     const inBeams = (x, w) =>
       (x < laserBeam.xL + laserBeam.width && x + w > laserBeam.xL) ||
       (x < laserBeam.xR + laserBeam.width && x + w > laserBeam.xR);
