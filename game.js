@@ -896,6 +896,8 @@ function spawnPickup(x, y, type) {
   });
 }
 
+const LASER_DURATION_TICKS = 60;
+
 function fireLaserBeam() {
   player.laser--;
   const cx = player.x + player.w / 2;
@@ -905,7 +907,7 @@ function fireLaserBeam() {
     xL: cx - gap / 2 - beamW,
     xR: cx + gap / 2,
     width: beamW,
-    timer: 24,
+    timer: LASER_DURATION_TICKS,
   };
 }
 
@@ -3665,7 +3667,7 @@ function draw() {
 
   if (laserBeam) {
     ctx.save();
-    const beamAlpha = Math.min(1, laserBeam.timer / 24) * 0.8 + 0.2;
+    const beamAlpha = Math.min(1, laserBeam.timer / LASER_DURATION_TICKS) * 0.8 + 0.2;
     const beamBottom = player.y + player.h / 2;
     ctx.globalAlpha = beamAlpha;
 
