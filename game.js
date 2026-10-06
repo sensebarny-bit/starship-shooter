@@ -1333,7 +1333,7 @@ function update() {
 
   if (player.gateTimer > 0) player.gateTimer--;
 
-  if (player.gateState === "charging" || player.gateState === "firing") {
+  if (player.gateState === "charging") {
     player.gateX = player.x + player.w / 2;
     player.gateY = player.y + player.h / 2;
   }
@@ -1356,6 +1356,16 @@ function update() {
     }
   } else if (player.gateState === "firing") {
     player.gateStateTimer--;
+
+    // the rift drifts on its own toward whatever is nearest, independent of player input
+    const gateTarget = findNearestTarget(player.gateX, player.gateY);
+    if (gateTarget) {
+      player.gateX += (gateTarget.x - player.gateX) * 0.07;
+      player.gateY += (gateTarget.y - player.gateY) * 0.07;
+    }
+    player.gateX = Math.max(GATE_WIDTH / 2, Math.min(WIDTH - GATE_WIDTH / 2, player.gateX));
+    player.gateY = Math.max(40, Math.min(HEIGHT, player.gateY));
+
     const gx0 = player.gateX - GATE_WIDTH / 2;
     const gx1 = player.gateX + GATE_WIDTH / 2;
 
