@@ -97,6 +97,8 @@ const player = {
   phoenixMode: false,
   phoenixTimer: 0,
   phoenixKills: 0,
+  phoenixStartX: 0,
+  phoenixStartY: 0,
   empCharge: 0,
   gateState: "idle",
   gateStateTimer: 0,
@@ -571,6 +573,8 @@ function resetGame() {
   player.phoenixMode = false;
   player.phoenixTimer = 0;
   player.phoenixKills = 0;
+  player.phoenixStartX = 0;
+  player.phoenixStartY = 0;
   player.empCharge = 0;
   player.gateState = "idle";
   player.gateStateTimer = 0;
@@ -723,10 +727,14 @@ function activateGateBeam() {
   spawnExplosion(player.gateX, player.y, "#ff1c38");
 }
 
+const PHOENIX_RETURN_TICKS = 90;
+
 function activatePhoenix() {
   player.phoenixCharge--;
   player.phoenixMode = true;
   player.phoenixTimer = 300;
+  player.phoenixStartX = player.x;
+  player.phoenixStartY = player.y;
   player.invincible = Math.max(player.invincible, 300);
 }
 
@@ -860,14 +868,29 @@ function update() {
 
   const moveSpeed = player.frozenTimer > 0 ? player.speed * 0.5 : player.speed;
   if (player.phoenixMode) {
-    // Wraith King: movement is automated, homing in on the nearest enemy or boss
-    const target = findNearestTarget(player.x + player.w / 2, player.y + player.h / 2);
-    if (target) {
-      const dx = target.x - (player.x + player.w / 2);
-      const dy = target.y - (player.y + player.h / 2);
+    if (player.phoenixTimer <= PHOENIX_RETURN_TICKS) {
+      // Wraith King is about to expire: fly back to where it was activated
+      const dx = player.phoenixStartX - player.x;
+      const dy = player.phoenixStartY - player.y;
       const dist = Math.hypot(dx, dy) || 1;
-      player.x += (dx / dist) * moveSpeed * 1.4;
-      player.y += (dy / dist) * moveSpeed * 1.4;
+      const step = moveSpeed * 2.4;
+      if (dist <= step) {
+        player.x = player.phoenixStartX;
+        player.y = player.phoenixStartY;
+      } else {
+        player.x += (dx / dist) * step;
+        player.y += (dy / dist) * step;
+      }
+    } else {
+      // Wraith King: movement is automated, homing in on the nearest enemy or boss
+      const target = findNearestTarget(player.x + player.w / 2, player.y + player.h / 2);
+      if (target) {
+        const dx = target.x - (player.x + player.w / 2);
+        const dy = target.y - (player.y + player.h / 2);
+        const dist = Math.hypot(dx, dy) || 1;
+        player.x += (dx / dist) * moveSpeed * 1.4;
+        player.y += (dy / dist) * moveSpeed * 1.4;
+      }
     }
   } else {
     if (keys.has("ArrowLeft") || keys.has("KeyA")) {
