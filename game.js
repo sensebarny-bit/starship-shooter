@@ -2172,108 +2172,180 @@ function drawGhostPirateBoss(b) {
   const realm = currentRealm();
   const accent = angry ? "#ff2d4d" : realm.star;
   const t = Date.now() / 1000;
-  const ghostAlpha = 0.74 + Math.sin(t * 2.0 + b.driftPhase) * 0.1;
+  const ghostAlpha = 0.78 + Math.sin(t * 1.6 + b.driftPhase) * 0.08;
 
   ctx.save();
   if (b.hitFlash > 0) ctx.globalAlpha = 0.4;
   else ctx.globalAlpha = ghostAlpha;
 
-  // spectral aura
-  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 1.05);
-  glow.addColorStop(0, accent + "66");
+  // roiling fog bank the captain emerges from
+  [0, 1, 2].forEach((i) => {
+    const fx = cx + Math.sin(t * 0.5 + i * 2) * b.w * 0.25;
+    const fy = cy + b.h * 0.15 + Math.cos(t * 0.4 + i) * b.h * 0.1;
+    const fog = ctx.createRadialGradient(fx, fy, 4, fx, fy, b.w * 0.75);
+    fog.addColorStop(0, "rgba(60,70,65,0.35)");
+    fog.addColorStop(1, "rgba(60,70,65,0)");
+    ctx.fillStyle = fog;
+    ctx.beginPath();
+    ctx.arc(fx, fy, b.w * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // ambient glow behind the figure
+  const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, b.w * 0.9);
+  glow.addColorStop(0, accent + "33");
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.ellipse(cx, cy, b.w * 1.05, b.h * 1.0, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, b.w * 0.9, b.h * 0.9, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // drifting mist wisps beneath the wreck
+  // drifting mist wisps beneath the figure
   ctx.strokeStyle = accent + "4d";
   ctx.lineWidth = 2;
   [-0.3, 0, 0.3].forEach((ox, i) => {
     const sway = Math.sin(t * 1.2 + i) * 5;
     ctx.beginPath();
-    ctx.moveTo(cx + b.w * ox, b.y + b.h * 0.88);
+    ctx.moveTo(cx + b.w * ox, b.y + b.h * 0.95);
     ctx.quadraticCurveTo(
       cx + b.w * ox + sway,
-      b.y + b.h * 1.08,
+      b.y + b.h * 1.15,
       cx + b.w * ox,
-      b.y + b.h * 1.25
+      b.y + b.h * 1.32
     );
     ctx.stroke();
   });
 
-  // hull dissolving into mist at the waterline
-  const hullGrad = ctx.createLinearGradient(cx, b.y + b.h * 0.4, cx, b.y + b.h * 0.95);
-  hullGrad.addColorStop(0, "#132a24");
-  hullGrad.addColorStop(1, "#132a2400");
-  ctx.fillStyle = hullGrad;
+  // tattered greatcoat, dissolving into fog at the hem
+  const coatGrad = ctx.createLinearGradient(cx, b.y + b.h * 0.35, cx, b.y + b.h * 0.95);
+  coatGrad.addColorStop(0, "#1a1f1c");
+  coatGrad.addColorStop(1, "#1a1f1c00");
+  ctx.fillStyle = coatGrad;
   ctx.beginPath();
-  ctx.moveTo(b.x + b.w * 0.12, b.y + b.h * 0.4);
-  ctx.lineTo(b.x + b.w * 0.88, b.y + b.h * 0.4);
-  ctx.lineTo(b.x + b.w * 0.6, b.y + b.h * 0.95);
-  ctx.lineTo(b.x + b.w * 0.4, b.y + b.h * 0.95);
+  ctx.moveTo(cx - b.w * 0.34, b.y + b.h * 0.35);
+  ctx.lineTo(cx + b.w * 0.34, b.y + b.h * 0.35);
+  ctx.lineTo(cx + b.w * 0.42, b.y + b.h * 0.95);
+  ctx.lineTo(cx + b.w * 0.22, b.y + b.h * 0.7);
+  ctx.lineTo(cx, b.y + b.h * 0.98);
+  ctx.lineTo(cx - b.w * 0.22, b.y + b.h * 0.7);
+  ctx.lineTo(cx - b.w * 0.42, b.y + b.h * 0.95);
   ctx.closePath();
   ctx.fill();
 
-  // sleek hull
-  ctx.fillStyle = "#132a24";
+  // broad decayed shoulders / coat collar
+  ctx.fillStyle = "#1a1f1c";
   ctx.beginPath();
-  ctx.moveTo(b.x, b.y + b.h * 0.2);
-  ctx.quadraticCurveTo(cx, b.y - b.h * 0.1, b.x + b.w, b.y + b.h * 0.2);
-  ctx.lineTo(b.x + b.w * 0.85, b.y + b.h * 0.4);
-  ctx.lineTo(b.x + b.w * 0.15, b.y + b.h * 0.4);
+  ctx.moveTo(cx - b.w * 0.1, b.y + b.h * 0.22);
+  ctx.quadraticCurveTo(cx - b.w * 0.4, b.y + b.h * 0.3, cx - b.w * 0.34, b.y + b.h * 0.4);
+  ctx.lineTo(cx + b.w * 0.34, b.y + b.h * 0.4);
+  ctx.quadraticCurveTo(cx + b.w * 0.4, b.y + b.h * 0.3, cx + b.w * 0.1, b.y + b.h * 0.22);
   ctx.closePath();
   ctx.fill();
 
-  // mast
-  ctx.strokeStyle = "#132a24";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(cx, b.y - b.h * 0.1);
-  ctx.lineTo(cx, b.y - b.h * 0.4);
-  ctx.stroke();
+  // barnacle decay along the shoulders
+  ctx.fillStyle = "#3a4440";
+  [-0.28, -0.14, 0.14, 0.28].forEach((ox) => {
+    ctx.beginPath();
+    ctx.arc(cx + b.w * ox, b.y + b.h * 0.33, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
 
-  // single torn sail
-  ctx.fillStyle = "#1c1f2b";
+  // skeletal clawed hands reaching from the sleeves
+  ctx.fillStyle = "#cdc8bb";
+  [-1, 1].forEach((side) => {
+    const hx = cx + side * b.w * 0.4;
+    const hy = b.y + b.h * 0.56;
+    for (let f = -1; f <= 1; f++) {
+      ctx.beginPath();
+      ctx.moveTo(hx, hy);
+      ctx.lineTo(hx + f * 3 + side * 4, hy + 10);
+      ctx.lineTo(hx + f * 2 + side * 2, hy + 11);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(hx + side * 1, hy, 3, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // dripping water from the coat
+  ctx.fillStyle = accent + "55";
+  [-0.2, 0.08, 0.24].forEach((ox, i) => {
+    const dripLen = 6 + (i % 2) * 4;
+    ctx.beginPath();
+    ctx.moveTo(cx + b.w * ox - 0.8, b.y + b.h * 0.72);
+    ctx.lineTo(cx + b.w * ox, b.y + b.h * 0.72 + dripLen);
+    ctx.lineTo(cx + b.w * ox + 0.8, b.y + b.h * 0.72);
+    ctx.closePath();
+    ctx.fill();
+  });
+
+  // tricorn captain's hat
+  ctx.fillStyle = "#15191a";
   ctx.beginPath();
-  ctx.moveTo(cx, b.y - b.h * 0.4);
-  ctx.quadraticCurveTo(cx + b.w * 0.26, b.y - b.h * 0.3, cx + b.w * 0.2, b.y - b.h * 0.1);
-  ctx.quadraticCurveTo(cx + b.w * 0.1, b.y - b.h * 0.16, cx, b.y - b.h * 0.08);
+  ctx.moveTo(cx - b.w * 0.26, b.y + b.h * 0.12);
+  ctx.quadraticCurveTo(cx, b.y - b.h * 0.08, cx + b.w * 0.26, b.y + b.h * 0.12);
+  ctx.quadraticCurveTo(cx + b.w * 0.14, b.y + b.h * 0.06, cx, b.y + b.h * 0.1);
+  ctx.quadraticCurveTo(cx - b.w * 0.14, b.y + b.h * 0.06, cx - b.w * 0.26, b.y + b.h * 0.12);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = accent + "99";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(cx, b.y - b.h * 0.4);
-  ctx.lineTo(cx, b.y - b.h * 0.08);
-  ctx.stroke();
 
-  // single cyclopean eye at the bow
-  ctx.fillStyle = accent + "66";
+  // rotted, gaunt face
+  ctx.fillStyle = "#9a978c";
   ctx.beginPath();
-  ctx.ellipse(cx, b.y + b.h * 0.14, b.w * 0.17, b.h * 0.16, 0, 0, Math.PI * 2);
+  ctx.moveTo(cx, b.y + b.h * 0.1);
+  ctx.quadraticCurveTo(cx + b.w * 0.17, b.y + b.h * 0.14, cx + b.w * 0.14, b.y + b.h * 0.3);
+  ctx.quadraticCurveTo(cx + b.w * 0.08, b.y + b.h * 0.42, cx, b.y + b.h * 0.46);
+  ctx.quadraticCurveTo(cx - b.w * 0.08, b.y + b.h * 0.42, cx - b.w * 0.14, b.y + b.h * 0.3);
+  ctx.quadraticCurveTo(cx - b.w * 0.17, b.y + b.h * 0.14, cx, b.y + b.h * 0.1);
+  ctx.closePath();
   ctx.fill();
+
+  // decay patch on the face
+  ctx.fillStyle = "rgba(40,45,35,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(cx + b.w * 0.07, b.y + b.h * 0.24, 3, 4, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // hollow sunken eye sockets
+  ctx.fillStyle = "#0a0a08";
+  ctx.beginPath();
+  ctx.ellipse(cx - b.w * 0.07, b.y + b.h * 0.22, b.w * 0.045, b.h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + b.w * 0.07, b.y + b.h * 0.22, b.w * 0.045, b.h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // dim pinprick glow deep in the sockets
   ctx.fillStyle = accent;
   ctx.beginPath();
-  ctx.ellipse(cx, b.y + b.h * 0.14, b.w * 0.09, b.h * 0.09, 0, 0, Math.PI * 2);
+  ctx.arc(cx - b.w * 0.07, b.y + b.h * 0.23, 0.9, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#0a0a0a";
   ctx.beginPath();
-  ctx.ellipse(cx, b.y + b.h * 0.14, b.w * 0.02, b.h * 0.05, 0, 0, Math.PI * 2);
+  ctx.arc(cx + b.w * 0.07, b.y + b.h * 0.23, 0.9, 0, Math.PI * 2);
   ctx.fill();
 
-  // glowing cannon ports
-  ctx.fillStyle = accent + "80";
-  [0.26, 0.74].forEach((f) => {
+  // gaping jaw with jagged broken teeth
+  ctx.fillStyle = "#0a0a08";
+  ctx.beginPath();
+  ctx.moveTo(cx - b.w * 0.08, b.y + b.h * 0.34);
+  ctx.lineTo(cx + b.w * 0.08, b.y + b.h * 0.34);
+  ctx.lineTo(cx + b.w * 0.05, b.y + b.h * 0.44);
+  ctx.lineTo(cx - b.w * 0.05, b.y + b.h * 0.44);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#9a978c";
+  ctx.lineWidth = 1;
+  [-0.05, -0.02, 0.02, 0.05].forEach((ox) => {
     ctx.beginPath();
-    ctx.arc(b.x + b.w * f, b.y + b.h * 0.3, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(cx + b.w * ox, b.y + b.h * 0.34);
+    ctx.lineTo(cx + b.w * ox, b.y + b.h * 0.38);
+    ctx.stroke();
   });
 
   ctx.restore();
 
-  drawBossHealthBar(b, "THE DROWNED HULL", accent);
+  drawBossHealthBar(b, "THE DROWNED CAPTAIN", accent);
 }
 
 function drawPlagueMotherBoss(b) {
