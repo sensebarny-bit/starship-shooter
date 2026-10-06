@@ -3041,8 +3041,8 @@ function draw() {
     for (let c = 0; c < drops; c++) {
       const seed = c * 12.9898;
       const hash = Math.abs(Math.sin(seed) * 43758.5453) % 1;
-      const speed = 50 + hash * 90;
-      const bulbY = (t / speed + hash * beamHeight) % (beamHeight + 40);
+      const fallSpeed = 220 + hash * 260; // px/sec, fast enough to clearly fall within the firing window
+      const bulbY = ((t / 1000) * fallSpeed + hash * beamHeight) % (beamHeight + 40);
       const radius = 1.6 + hash * 1.4;
       const tailLength = 8 + hash * 12;
       const dropX = gx0 + c * dropSpacing + dropSpacing / 2 + Math.sin(c) * 1.5;
@@ -3070,8 +3070,8 @@ function draw() {
       const seed = i * 7.31 + 100;
       const hash = Math.abs(Math.sin(seed) * 43758.5453) % 1;
       const moteX = gx0 + hash * GATE_WIDTH;
-      const speed = 40 + hash * 60;
-      const moteY = beamHeight - ((t / speed + hash * beamHeight) % beamHeight);
+      const riseSpeed = 160 + hash * 180; // px/sec
+      const moteY = beamHeight - (((t / 1000) * riseSpeed + hash * beamHeight) % beamHeight);
       ctx.globalAlpha = 0.4 + 0.5 * Math.abs(Math.sin(t / 200 + seed));
       ctx.fillStyle = "#b9a6ff";
       ctx.fillRect(Math.round(moteX), Math.round(moteY), 2, 2);
