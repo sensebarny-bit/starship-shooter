@@ -706,7 +706,7 @@ function fireRocket() {
   });
 }
 
-const GATE_CHARGE_TICKS = 22.5 * 72;
+const GATE_CHARGE_TICKS = 5 * 72;
 const GATE_FIRE_TICKS = 216;
 const GATE_COOLDOWN_TICKS = 30 * 72;
 const GATE_WIDTH = WIDTH * 0.42;
@@ -1323,7 +1323,6 @@ function update() {
 
   if (player.gateState === "charging" || player.gateState === "firing") {
     player.gateX = player.x + player.w / 2;
-    player.gateY = player.y + player.h / 2;
   }
 
   if (player.gateState === "charging") {
