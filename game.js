@@ -60,12 +60,22 @@ const ENEMY_TYPES = {
     fireMax: 190,
     twin: true,
   },
+  revenant: {
+    w: 32,
+    h: 32,
+    hpBonus: 3,
+    speedMul: 1.15,
+    fireMin: 75,
+    fireMax: 120,
+    spread: true,
+  },
 };
 
 function enemyTypesForWave(wave) {
   const pool = ["scout"];
   if (wave >= 3) pool.push("stalker");
   if (wave >= 6) pool.push("cruiser");
+  if (wave > 20) pool.push("revenant");
   return pool;
 }
 
@@ -1363,6 +1373,24 @@ function update() {
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
         });
+      } else if (e.type === "revenant") {
+        const angle = Math.atan2(
+          player.y + player.h / 2 - (e.y + e.h * 0.6),
+          player.x + player.w / 2 - (e.x + e.w / 2)
+        );
+        const speed = 4 + state.wave * 0.12;
+        [-0.24, 0, 0.24].forEach((spread) => {
+          const a = angle + spread;
+          enemyBullets.push({
+            x: e.x + e.w / 2 - 2,
+            y: e.y + e.h * 0.6,
+            w: 4,
+            h: 4,
+            vx: Math.cos(a) * speed,
+            vy: Math.sin(a) * speed,
+            color: "#8fff9e",
+          });
+        });
       } else {
         enemyBullets.push({
           x: e.x + e.w / 2 - 2,
@@ -2124,9 +2152,12 @@ function drawPhoenixShip(x, y, w, h) {
 
 function drawEvilStarship(x, y, w, h) {
   const cx = x + w / 2;
+  const t = Date.now() / 1000;
+  const twitch = Math.sin(t * 19 + cx) > 0.92 ? (Math.random() - 0.5) * 2.5 : 0;
   ctx.save();
+  ctx.translate(twitch, 0);
 
-  // engine glow at the rear (top, since it's diving toward the player) — flat layers, no gradient
+  // sickly engine glow at the rear — flat layers, no gradient
   const flicker = 6 + Math.random() * 4;
   ctx.fillStyle = "rgba(255,70,70,0.35)";
   ctx.beginPath();
@@ -2137,44 +2168,70 @@ function drawEvilStarship(x, y, w, h) {
   ctx.arc(cx, y, flicker * 0.45, 0, Math.PI * 2);
   ctx.fill();
 
-  // scalloped bat-membrane wings
-  ctx.fillStyle = "#2a0f1a";
+  // tattered, torn bat-membrane wings with ragged holes — asymmetric, uneven
+  ctx.fillStyle = "#1c0912";
   [-1, 1].forEach((side) => {
+    const sag = side < 0 ? 1 : 0.84;
     ctx.beginPath();
     ctx.moveTo(cx, y + h * 0.3);
-    ctx.lineTo(cx + side * w * 0.55, y + h * 0.1);
-    ctx.quadraticCurveTo(cx + side * w * 0.5, y + h * 0.4, cx + side * w * 0.32, y + h * 0.42);
-    ctx.quadraticCurveTo(cx + side * w * 0.42, y + h * 0.55, cx + side * w * 0.2, y + h * 0.6);
+    ctx.lineTo(cx + side * w * 0.56, y + h * 0.08 * sag);
+    ctx.quadraticCurveTo(
+      cx + side * w * 0.52,
+      y + h * 0.38 * sag,
+      cx + side * w * 0.3,
+      y + h * 0.44
+    );
+    ctx.quadraticCurveTo(cx + side * w * 0.44, y + h * 0.58, cx + side * w * 0.18, y + h * 0.63);
     ctx.lineTo(cx, y + h * 0.4);
     ctx.closePath();
     ctx.fill();
+
+    // ragged holes torn through the membrane
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    ctx.beginPath();
+    ctx.ellipse(cx + side * w * 0.3, y + h * 0.28, 2.2, 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + side * w * 0.42, y + h * 0.46, 1.4, 1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // visible bone spurs poking through the wing
+    ctx.strokeStyle = "rgba(222,210,195,0.4)";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(cx + side * w * 0.12, y + h * 0.32);
+    ctx.lineTo(cx + side * w * 0.5, y + h * 0.16);
+    ctx.stroke();
   });
 
-  // tiny horn spikes
+  // crooked, uneven horn spikes
   ctx.fillStyle = "#2a0f1a";
   ctx.beginPath();
   ctx.moveTo(cx - 2, y + h * 0.2);
-  ctx.lineTo(cx - 3.4, y);
+  ctx.lineTo(cx - 3.8, y - 1);
   ctx.lineTo(cx - 1, y + h * 0.18);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
   ctx.moveTo(cx + 2, y + h * 0.2);
-  ctx.lineTo(cx + 3.4, y);
+  ctx.lineTo(cx + 2.9, y + 0.4);
   ctx.lineTo(cx + 1, y + h * 0.18);
   ctx.closePath();
   ctx.fill();
 
-  // imp head, chin pointed down toward the player — gradient for 3D volume
+  // gaunt, elongated skull-head, chin pointed down toward the player
   const impHeadGrad = ctx.createLinearGradient(cx - 4.5, y + h * 0.5, cx + 4.5, y + h);
   impHeadGrad.addColorStop(0, "#2a2433");
   impHeadGrad.addColorStop(0.5, "#17141f");
   impHeadGrad.addColorStop(1, "#0a0710");
   ctx.fillStyle = impHeadGrad;
   ctx.beginPath();
-  ctx.moveTo(cx, y + h);
-  ctx.lineTo(cx + 4.5, y + h * 0.5);
-  ctx.lineTo(cx - 4.5, y + h * 0.5);
+  ctx.moveTo(cx, y + h * 1.04);
+  ctx.lineTo(cx + 4.2, y + h * 0.5);
+  ctx.lineTo(cx - 4.8, y + h * 0.5);
   ctx.closePath();
   ctx.fill();
 
@@ -2182,41 +2239,56 @@ function drawEvilStarship(x, y, w, h) {
   ctx.strokeStyle = "rgba(255,255,255,0.25)";
   ctx.lineWidth = 0.6;
   ctx.beginPath();
-  ctx.moveTo(cx - 4.5, y + h * 0.5);
-  ctx.lineTo(cx, y + h);
+  ctx.moveTo(cx - 4.8, y + h * 0.5);
+  ctx.lineTo(cx, y + h * 1.04);
   ctx.stroke();
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
   ctx.beginPath();
-  ctx.moveTo(cx + 4.5, y + h * 0.5);
-  ctx.lineTo(cx, y + h);
+  ctx.moveTo(cx + 4.2, y + h * 0.5);
+  ctx.lineTo(cx, y + h * 1.04);
   ctx.stroke();
 
-  // twin glowing eyes
+  // three asymmetric eyes — one lazily drooping, none matched in size
+  const blink = Math.sin(t * 5 + cx * 0.3) > 0.85;
   ctx.fillStyle = "#ff2d4d";
+  if (!blink) {
+    ctx.beginPath();
+    ctx.arc(cx - 2.1, y + h * 0.6, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.beginPath();
-  ctx.arc(cx - 1.8, y + h * 0.62, 1.6, 0, Math.PI * 2);
+  ctx.arc(cx + 1.6, y + h * 0.64, 1.8, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = "rgba(255,45,77,0.55)";
   ctx.beginPath();
-  ctx.arc(cx + 1.8, y + h * 0.62, 1.6, 0, Math.PI * 2);
+  ctx.arc(cx + 0.2, y + h * 0.74, 0.9, 0, Math.PI * 2);
   ctx.fill();
 
-  // gaping fanged maw
+  // unhinged, overlong jaw with uneven fangs and a drip of ichor
   ctx.fillStyle = "#0a0710";
   ctx.beginPath();
-  ctx.moveTo(cx - 2.2, y + h * 0.78);
-  ctx.lineTo(cx + 2.2, y + h * 0.78);
-  ctx.lineTo(cx, y + h * 0.94);
+  ctx.moveTo(cx - 2.4, y + h * 0.78);
+  ctx.lineTo(cx + 2.4, y + h * 0.78);
+  ctx.lineTo(cx + 0.6, y + h * 1.02);
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = "#ded2c3";
-  [-1.4, 1.4].forEach((fx) => {
-    ctx.beginPath();
-    ctx.moveTo(cx + fx, y + h * 0.78);
-    ctx.lineTo(cx + fx * 0.6, y + h * 0.86);
-    ctx.lineTo(cx + fx * 1.3, y + h * 0.8);
-    ctx.closePath();
-    ctx.fill();
-  });
+  ctx.beginPath();
+  ctx.moveTo(cx - 1.6, y + h * 0.78);
+  ctx.lineTo(cx - 1, y + h * 0.9);
+  ctx.lineTo(cx - 0.3, y + h * 0.8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + 1.8, y + h * 0.78);
+  ctx.lineTo(cx + 1.2, y + h * 0.94);
+  ctx.lineTo(cx + 0.5, y + h * 0.8);
+  ctx.closePath();
+  ctx.fill();
+  if (Math.sin(t * 2.3 + cx) > 0.3) {
+    ctx.fillStyle = "rgba(150,230,130,0.55)";
+    ctx.fillRect(cx + 0.4, y + h * 1.0, 0.8, 2 + Math.sin(t * 6) * 1);
+  }
 
   // clawed wing joints
   ctx.fillStyle = "#0a0710";
@@ -2237,6 +2309,7 @@ function drawEvilStarship(x, y, w, h) {
 }
 
 function drawCruiser(x, y, w, h) {
+  const t = Date.now() / 1000;
   ctx.save();
 
   // twin engine glow — flat layers, no gradient
@@ -2263,6 +2336,17 @@ function drawCruiser(x, y, w, h) {
     ctx.lineTo(bx - 3, y + h * 0.26);
     ctx.closePath();
     ctx.fill();
+  });
+
+  // writhing innards dangling beneath the hull
+  ctx.strokeStyle = "#3a0f16";
+  ctx.lineWidth = 1.6;
+  [0.34, 0.5, 0.66].forEach((tx, i) => {
+    const sway = Math.sin(t * 2.4 + i * 2) * 3;
+    ctx.beginPath();
+    ctx.moveTo(x + w * tx, y + h * 0.85);
+    ctx.quadraticCurveTo(x + w * tx + sway, y + h * 1.05, x + w * tx + sway * 0.6, y + h * 1.2);
+    ctx.stroke();
   });
 
   // ribbed bone hull — gradient for 3D volume
@@ -2292,56 +2376,81 @@ function drawCruiser(x, y, w, h) {
   ctx.lineTo(x + w * 0.78, y + h * 0.85);
   ctx.stroke();
 
+  // a crack splitting the hull in two
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.58, y + h * 0.17);
+  ctx.lineTo(x + w * 0.5, y + h * 0.35);
+  ctx.lineTo(x + w * 0.56, y + h * 0.5);
+  ctx.stroke();
+
   // rib struts
   ctx.strokeStyle = "rgba(222,210,195,0.25)";
   ctx.lineWidth = 1;
-  [0.32, 0.48, 0.64].forEach((t) => {
+  [0.32, 0.48, 0.64].forEach((tt) => {
     ctx.beginPath();
-    ctx.moveTo(x + w * (0.28 + t * 0.06), y + h * t);
-    ctx.lineTo(x + w * (0.72 - t * 0.06), y + h * t);
+    ctx.moveTo(x + w * (0.28 + tt * 0.06), y + h * tt);
+    ctx.lineTo(x + w * (0.72 - tt * 0.06), y + h * tt);
     ctx.stroke();
   });
 
-  // skull emblem with glowing hollow eyes
+  // cracked, asymmetric skull emblem — one socket sunken and larger
   ctx.fillStyle = "#ded2c3";
   ctx.beginPath();
-  ctx.arc(x + w * 0.5, y + h * 0.4, w * 0.09, 0, Math.PI * 2);
+  ctx.arc(x + w * 0.5, y + h * 0.4, w * 0.095, 0, Math.PI * 2);
   ctx.fill();
+  const eyeFlicker = Math.sin(t * 9) > -0.3;
   ctx.fillStyle = "rgba(255,45,77,0.5)";
   ctx.beginPath();
-  ctx.arc(x + w * 0.47, y + h * 0.39, 2, 0, Math.PI * 2);
+  ctx.ellipse(x + w * 0.46, y + h * 0.4, 2.6, 2.1, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.beginPath();
-  ctx.arc(x + w * 0.53, y + h * 0.39, 2, 0, Math.PI * 2);
-  ctx.fill();
+  if (eyeFlicker) {
+    ctx.beginPath();
+    ctx.arc(x + w * 0.535, y + h * 0.385, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.fillStyle = "#ff2d4d";
   ctx.beginPath();
-  ctx.arc(x + w * 0.47, y + h * 0.39, 1, 0, Math.PI * 2);
+  ctx.arc(x + w * 0.46, y + h * 0.4, 1.3, 0, Math.PI * 2);
   ctx.fill();
-  ctx.beginPath();
-  ctx.arc(x + w * 0.53, y + h * 0.39, 1, 0, Math.PI * 2);
-  ctx.fill();
+  if (eyeFlicker) {
+    ctx.beginPath();
+    ctx.arc(x + w * 0.535, y + h * 0.385, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  // fanged jaw beneath the emblem
+  // unhinged jagged jaw beneath the emblem
   ctx.fillStyle = "#17141f";
   ctx.beginPath();
-  ctx.moveTo(x + w * 0.44, y + h * 0.47);
-  ctx.lineTo(x + w * 0.56, y + h * 0.47);
-  ctx.lineTo(x + w * 0.5, y + h * 0.55);
+  ctx.moveTo(x + w * 0.43, y + h * 0.47);
+  ctx.lineTo(x + w * 0.58, y + h * 0.47);
+  ctx.lineTo(x + w * 0.5, y + h * 0.58);
   ctx.closePath();
   ctx.fill();
+  ctx.fillStyle = "#ded2c3";
+  [0.46, 0.5, 0.54].forEach((tt) => {
+    ctx.beginPath();
+    ctx.moveTo(x + w * tt - 0.6, y + h * 0.47);
+    ctx.lineTo(x + w * tt, y + h * 0.52);
+    ctx.lineTo(x + w * tt + 0.6, y + h * 0.47);
+    ctx.closePath();
+    ctx.fill();
+  });
 
-  // red sensor stripe
+  // red sensor stripe, irregular pulse
+  ctx.globalAlpha = 0.6 + Math.sin(t * 6) * 0.3;
   ctx.fillStyle = "#ff2d4d";
   ctx.fillRect(x + w * 0.4, y + h * 0.58, w * 0.2, h * 0.08);
+  ctx.globalAlpha = 1;
 
   // spiked tusk cannons
   ctx.fillStyle = "#17141f";
-  [0.2, 0.77].forEach((t) => {
+  [0.2, 0.77].forEach((tt) => {
     ctx.beginPath();
-    ctx.moveTo(x + w * t, y + h * 0.78);
-    ctx.lineTo(x + w * t + 3, y + h * 0.78);
-    ctx.lineTo(x + w * t + 1.5, y + h * 1.1);
+    ctx.moveTo(x + w * tt, y + h * 0.78);
+    ctx.lineTo(x + w * tt + 3, y + h * 0.78);
+    ctx.lineTo(x + w * tt + 1.5, y + h * 1.1);
     ctx.closePath();
     ctx.fill();
   });
@@ -2352,6 +2461,7 @@ function drawCruiser(x, y, w, h) {
 function drawStalker(x, y, w, h) {
   const cx = x + w / 2;
   const cy = y + h / 2;
+  const t = Date.now() / 1000;
   ctx.save();
 
   // engine glow — flat layers, no gradient
@@ -2365,13 +2475,13 @@ function drawStalker(x, y, w, h) {
   ctx.arc(cx, y, flicker * 0.45, 0, Math.PI * 2);
   ctx.fill();
 
-  // trailing wisp tendrils
+  // writhing wisp tendrils, each swaying independently
   ctx.strokeStyle = "rgba(36,18,51,0.8)";
   ctx.lineWidth = 2;
-  [-1, 0, 1].forEach((side) => {
-    const sway = Math.sin(Date.now() / 300 + side) * 2;
+  [-1.4, -0.5, 0.4, 1.3].forEach((side, i) => {
+    const sway = Math.sin(t * 2.6 + i * 1.7) * 2.6;
     const tipX = cx + side * 3;
-    const tipY = y + h;
+    const tipY = y + h + Math.sin(t * 1.5 + i) * 1.5;
     ctx.beginPath();
     ctx.moveTo(cx + side * 4, y + h * 0.7);
     ctx.quadraticCurveTo(cx + side * 6 + sway, y + h * 0.9, tipX, tipY);
@@ -2420,22 +2530,166 @@ function drawStalker(x, y, w, h) {
     ctx.fill();
   }
 
-  // glowing tracking eye — layered sclera / iris / pupil
-  ctx.fillStyle = "rgba(176,107,255,0.35)";
+  // a crooked grin slit beneath the main eye, lined with tiny teeth
+  ctx.fillStyle = "#0a0710";
   ctx.beginPath();
-  ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+  ctx.moveTo(cx - 5, cy + 7);
+  ctx.quadraticCurveTo(cx, cy + 10, cx + 6, cy + 6.5);
+  ctx.quadraticCurveTo(cx, cy + 9, cx - 5, cy + 7);
+  ctx.closePath();
   ctx.fill();
   ctx.fillStyle = "#ded2c3";
+  for (let i = -4; i <= 5; i++) {
+    ctx.fillRect(cx + i * 1, cy + 6.6 + (i % 2 === 0 ? 0 : 0.6), 0.6, 1.1);
+  }
+
+  // the central tracking eye, plus two smaller eyes blinking out of sync
+  const mainEyeOpen = Math.sin(t * 4.2) > -0.75;
+  if (mainEyeOpen) {
+    ctx.fillStyle = "rgba(176,107,255,0.35)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ded2c3";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b06bff";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#17141f";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 0.7, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.strokeStyle = "#b06bff";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, cy);
+    ctx.lineTo(cx + 4, cy);
+    ctx.stroke();
+  }
+
+  [-1, 1].forEach((side, i) => {
+    const open = Math.sin(t * 6 + side * 3 + i) > -0.4;
+    const ex = cx + side * w * 0.3;
+    const ey = cy - h * 0.06;
+    if (!open) return;
+    ctx.fillStyle = "#b06bff";
+    ctx.beginPath();
+    ctx.arc(ex, ey, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#17141f";
+    ctx.beginPath();
+    ctx.arc(ex, ey, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+function drawRevenant(x, y, w, h) {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const t = Date.now() / 1000;
+  const flicker = 0.75 + Math.sin(t * 11 + cx) * 0.2 + (Math.random() < 0.05 ? -0.4 : 0);
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.25, Math.min(1, flicker));
+
+  // sickly spectral aura
+  const glow = ctx.createRadialGradient(cx, cy, 2, cx, cy, w * 0.9);
+  glow.addColorStop(0, "rgba(143,255,158,0.35)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.arc(cx, cy, w * 0.9, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#b06bff";
+
+  // writhing jellyfish-like tendrils trailing below, uneven lengths
+  ctx.strokeStyle = "rgba(60,90,60,0.7)";
+  ctx.lineWidth = 1.2;
+  [-1.6, -0.8, 0, 0.8, 1.6].forEach((side, i) => {
+    const sway = Math.sin(t * 1.8 + i * 1.3) * 3;
+    const len = h * (0.5 + (i % 2) * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(cx + side * 3, y + h * 0.7);
+    ctx.quadraticCurveTo(cx + side * 5 + sway, y + h * 0.7 + len * 0.6, cx + side * 2 + sway, y + h * 0.7 + len);
+    ctx.stroke();
+  });
+
+  // tattered grave-shroud cape
+  ctx.fillStyle = "#1a2418";
   ctx.beginPath();
-  ctx.arc(cx, cy, 2.4, 0, Math.PI * 2);
+  ctx.moveTo(cx, y + h * 0.1);
+  ctx.lineTo(x + w * 0.05, y + h * 0.55);
+  ctx.lineTo(x + w * 0.2, y + h * 0.42);
+  ctx.lineTo(x + w * 0.32, y + h * 0.62);
+  ctx.lineTo(cx, y + h * 0.48);
+  ctx.lineTo(x + w * 0.68, y + h * 0.62);
+  ctx.lineTo(x + w * 0.8, y + h * 0.42);
+  ctx.lineTo(x + w * 0.95, y + h * 0.55);
+  ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = "#17141f";
+
+  // cracked glass cockpit dome housing the corpse-pilot
+  const domeGrad = ctx.createRadialGradient(cx, y + h * 0.4, 1, cx, y + h * 0.4, w * 0.3);
+  domeGrad.addColorStop(0, "#2b3a28");
+  domeGrad.addColorStop(1, "#111a10");
+  ctx.fillStyle = domeGrad;
   ctx.beginPath();
-  ctx.ellipse(cx, cy, 0.7, 2.6, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, y + h * 0.4, w * 0.26, h * 0.32, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(143,255,158,0.5)";
+  ctx.lineWidth = 0.7;
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.4, w * 0.26, h * 0.32, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // crack lines across the dome glass
+  ctx.strokeStyle = "rgba(200,255,200,0.4)";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.2, y + h * 0.28);
+  ctx.lineTo(cx - w * 0.04, y + h * 0.38);
+  ctx.lineTo(cx + w * 0.1, y + h * 0.3);
+  ctx.moveTo(cx - w * 0.04, y + h * 0.38);
+  ctx.lineTo(cx, y + h * 0.56);
+  ctx.stroke();
+
+  // the screaming skeletal face within, vertically elongated mouth
+  ctx.fillStyle = "#cdd9c6";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.36, w * 0.1, h * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#0a0f09";
+  ctx.beginPath();
+  ctx.ellipse(cx - w * 0.045, y + h * 0.33, w * 0.025, h * 0.045, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + w * 0.045, y + h * 0.33, w * 0.025, h * 0.045, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#8fff9e";
+  ctx.beginPath();
+  ctx.arc(cx - w * 0.045, y + h * 0.33, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + w * 0.045, y + h * 0.33, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#0a0f09";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + h * 0.44 + Math.sin(t * 7) * 0.8, w * 0.045, h * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // pulsing green soul-core at the chest
+  const corePulse = 1 + Math.sin(t * 5) * 0.3;
+  ctx.fillStyle = "rgba(143,255,158,0.6)";
+  ctx.beginPath();
+  ctx.arc(cx, y + h * 0.72, 2.2 * corePulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#e4ffe6";
+  ctx.beginPath();
+  ctx.arc(cx, y + h * 0.72, 0.9, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -3573,6 +3827,7 @@ function draw() {
     drawDropShadow(e.x, e.y, e.w, e.h);
     if (e.type === "cruiser") drawCruiser(e.x, e.y, e.w, e.h);
     else if (e.type === "stalker") drawStalker(e.x, e.y, e.w, e.h);
+    else if (e.type === "revenant") drawRevenant(e.x, e.y, e.w, e.h);
     else drawEvilStarship(e.x, e.y, e.w, e.h);
     if (e.stunTimer > 0) {
       ctx.save();
